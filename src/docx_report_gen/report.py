@@ -1,42 +1,37 @@
 """Report class — assembles all mixins into a single builder."""
 from docx import Document
 
-from .mixins import HeadingMixin, ParagraphMixin, TableMixin
-from .styles import configure_fonts, set_margins
+from .mixins import (
+    HeadingMixin, LayoutMixin, ParagraphMixin, TableMixin, ImageMixin
+)
+from .styles import StylesConfig, apply
 
 
-class Report(HeadingMixin, ParagraphMixin, TableMixin):
+class Report(HeadingMixin, ParagraphMixin, TableMixin, LayoutMixin, ImageMixin):
     """Declarative docx report builder.
 
     Example:
-        from docx_report_gen import Report, b, i, f
+        from docx_report_gen import Report, StylesConfig, HeadingStyle, b, i, f
 
-        r = Report()
+        config = StylesConfig(
+            font='Times New Roman',
+            heading=HeadingStyle(align='left', color=(0, 0, 0)),
+        )
+        r = Report(config=config)
         r.h1('Introduction')
         r.p('The ', b('key'), ' relation is ', f('E = mc^2'), '.')
-        r.f(r'\\int_0^1 x^2 \\, dx')   # block formula
+        r.table([[1, 2], [3, 4]], caption='Experimental data')
         r.save('report.docx')
     """
 
-    def __init__(
-        self,
-        font: str = 'Times New Roman',
-        size: int = 12,
-        h_sizes: tuple = (18, 16, 14, 13, 12, 12),
-        margins: tuple | None = None,
-    ):
+    def __init__(self, config: StylesConfig | None = None):
+        self.config = config or StylesConfig()
         self.doc = Document()
-        configure_fonts(self.doc, font, size, h_sizes)
-        if margins:
-            set_margins(self.doc, *margins)
+        apply(self.doc, self.config)
 
     def style(self, name: str):
         """Direct access to a python-docx style object."""
         return self.doc.styles[name]
-
-    def page_break(self):
-        self.doc.add_page_break()
-        return self
 
     def save(self, path: str):
         self.doc.save(path)
