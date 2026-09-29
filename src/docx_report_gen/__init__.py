@@ -1,9 +1,9 @@
 """docx-report-gen — a minimal wrapper for generating docx reports."""
-from .inline import b, i, f
+from .inline import b, i, f, link
 from .report import Report
 from .styles import (
-    CaptionStyle, HeadingStyle, ImageStyle,
-    ParagraphStyle, StylesConfig,
+    CaptionStyle, CodeStyle, HeadingStyle, ImageStyle,
+    ListStyle, ParagraphStyle, QuoteStyle, StylesConfig,
 )
 
 __all__ = [
@@ -13,6 +13,9 @@ __all__ = [
     'CaptionStyle',
     'ParagraphStyle',
     'ImageStyle',
-    'b', 'i', 'f',
+    'ListStyle',
+    'CodeStyle',
+    'QuoteStyle',
+    'b', 'i', 'f', 'link',
 ]
-__version__ = '0.2.0'
+__version__ = '0.2.1'

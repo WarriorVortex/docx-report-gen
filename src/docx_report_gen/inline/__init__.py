@@ -1,4 +1,10 @@
 """Inline content nodes."""
-from .nodes import Inline, Bold, Italic, Formula, b, i, f
+from .nodes import (
+    Inline, Bold, Italic, Formula, Link,
+    b, i, f, link,
+)
 
-__all__ = ['Inline', 'Bold', 'Italic', 'Formula', 'b', 'i', 'f']
+__all__ = [
+    'Inline', 'Bold', 'Italic', 'Formula', 'Link',
+    'b', 'i', 'f', 'link',
+]
