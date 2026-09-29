@@ -1,26 +1,27 @@
 """Heading methods mixin."""
-from ..styles import ALIGN
+from ..styles import ALIGN, resolve_heading, resolve_title
 from ._base import DocMixin
 
 
 class HeadingMixin(DocMixin):
     """Adds title() and h1()..h6() to Report."""
 
-    def title(self, text: str, align: str | None = None):
-        para = self.doc.add_heading(text, level=0)
-        if align is not None:
-            para.alignment = ALIGN[align]
-        return self
-
-    def _heading(self, level: int, text: str, align: str | None = None):
+    def _add_heading(self, level, text, align):
+        local = {'align': align}
+        if level == 0:
+            resolved = resolve_title(self.config, local)
+        else:
+            resolved = resolve_heading(self.config, level, local)
         para = self.doc.add_heading(text, level=level)
-        if align is not None:
-            para.alignment = ALIGN[align]
+        para.alignment = ALIGN[resolved.align]
         return self
 
-    def h1(self, text: str, align: str | None = None): return self._heading(1, text, align)
-    def h2(self, text: str, align: str | None = None): return self._heading(2, text, align)
-    def h3(self, text: str, align: str | None = None): return self._heading(3, text, align)
-    def h4(self, text: str, align: str | None = None): return self._heading(4, text, align)
-    def h5(self, text: str, align: str | None = None): return self._heading(5, text, align)
-    def h6(self, text: str, align: str | None = None): return self._heading(6, text, align)
+    def title(self, text, align=None):
+        return self._add_heading(0, text, align)
+
+    def h1(self, text, align=None): return self._add_heading(1, text, align)
+    def h2(self, text, align=None): return self._add_heading(2, text, align)
+    def h3(self, text, align=None): return self._add_heading(3, text, align)
+    def h4(self, text, align=None): return self._add_heading(4, text, align)
+    def h5(self, text, align=None): return self._add_heading(5, text, align)
+    def h6(self, text, align=None): return self._add_heading(6, text, align)

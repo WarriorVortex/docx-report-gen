@@ -1,9 +1,8 @@
 """Apply StylesConfig to a python-docx Document.
 
 The public entry point is `apply()`. Each category of styles lives in
-its own module (normal, title, headings, captions, page) and exposes a
-single `apply_*` function. To add a new category, create the module
-and add one import + one call below.
+its own module and exposes a single `apply_*` function. To add a new
+category, create the module and add one import + one call below.
 """
 from docx import Document
 

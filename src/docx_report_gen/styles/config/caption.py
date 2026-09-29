@@ -7,7 +7,7 @@ from .types import RGB
 
 @dataclass
 class CaptionStyle:
-    """Style and numbering format for table captions.
+    """Style and numbering format for table and image captions.
 
     The `template` is rendered with str.format() and may use three
     placeholders: {prefix}, {n}, {caption}. Examples:
@@ -19,7 +19,7 @@ class CaptionStyle:
     """
     prefix: str = 'Таблица'
     template: str = '{prefix} {n} — {caption}'
-    align: str = 'left'
+    align: Optional[str] = None
     font: Optional[str] = None
     size: Optional[int] = None
     bold: Optional[bool] = None

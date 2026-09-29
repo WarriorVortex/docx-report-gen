@@ -1,58 +1,63 @@
-"""Utility helpers shared by the style application steps."""
-from docx import Document
+"""Generic style utilities."""
+from dataclasses import fields
+
 from docx.enum.style import WD_STYLE_TYPE
 from docx.shared import Pt, RGBColor
 
-from .config import HeadingStyle
 
+def resolve(cls, *sources):
+    """Return a fully-resolved instance of `cls`.
 
-def merge(base: HeadingStyle, override: HeadingStyle) -> HeadingStyle:
-    """Return a new HeadingStyle with `override` fields taking precedence.
+    For every field of `cls`, the first source providing a non-None
+    value wins. Sources are checked left-to-right and may be:
+      - an instance of `cls` (or any object with matching attributes)
+      - a dict with field names as keys
+      - None (skipped)
 
-    Fields left as None in `override` are taken from `base`.
-    """
-    def pick(name):
-        value = getattr(override, name)
-        return value if value is not None else getattr(base, name)
-
-    return HeadingStyle(
-        font=pick('font'),
-        size=pick('size'),
-        bold=pick('bold'),
-        italic=pick('italic'),
-        color=pick('color'),
-        align=pick('align'),
-    )
-
-
-def apply_font(style, *, font, size, bold, italic, color, align,
-               default_font, align_map):
-    """Apply font and paragraph properties to a Word style object.
+    Attributes missing on a source are skipped. When no source sets a
+    field, the dataclass's own declared default is used.
 
     Args:
-        style: a python-docx style object to modify.
-        font: font name; falls back to `default_font` if None.
-        size: size in points, or None to leave unchanged.
-        bold, italic: True/False to set, None to leave unchanged.
-        color: (r, g, b) tuple, or None to leave unchanged.
-        align: string key into `align_map`, or None to leave unchanged.
-        default_font: fallback font name when `font` is None.
-        align_map: mapping of align-name -> WD_ALIGN_PARAGRAPH value.
+        cls: style dataclass (HeadingStyle, CaptionStyle, ...).
+        *sources: sources in priority order, typically ending with the
+            global StylesConfig to supply font/size/color/align.
+
+    Returns:
+        An instance of `cls` with every field resolved.
     """
-    style.font.name = font or default_font
+    resolved = {}
+    for f in fields(cls):
+        for src in sources:
+            if src is None:
+                continue
+            if isinstance(src, dict):
+                value = src.get(f.name)
+            else:
+                value = getattr(src, f.name, None)
+            if value is not None:
+                resolved[f.name] = value
+                break
+    return cls(**resolved)
+
+
+def apply_font(style, resolved, default_font='Times New Roman'):
+    """Apply font properties of a resolved style to a Word style object."""
+    style.font.name = getattr(resolved, 'font', None) or default_font
+    size = getattr(resolved, 'size', None)
     if size is not None:
         style.font.size = Pt(size)
+    bold = getattr(resolved, 'bold', None)
     if bold is not None:
         style.font.bold = bold
+    italic = getattr(resolved, 'italic', None)
     if italic is not None:
         style.font.italic = italic
+    color = getattr(resolved, 'color', None)
     if color is not None:
         style.font.color.rgb = RGBColor(*color)
-    if align is not None:
-        style.paragraph_format.alignment = align_map[align]
 
 
-def ensure_style(doc: Document, name: str):
+def ensure_style(doc, name):
     """Return an existing style by name or create a new paragraph style."""
     try:
         return doc.styles[name]

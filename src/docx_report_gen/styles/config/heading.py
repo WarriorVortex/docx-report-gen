@@ -9,7 +9,8 @@ from .types import RGB
 class HeadingStyle:
     """Style for one heading level.
 
-    Any field left as None means 'inherit the default from StylesConfig'.
+    Any field left as None means 'not set here — try the next source
+    in the resolve() chain'.
     """
     font: Optional[str] = None
     size: Optional[int] = None

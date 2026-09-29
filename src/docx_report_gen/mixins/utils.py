@@ -9,12 +9,8 @@ def render_caption(doc: Document, caption_style, style_name: str,
                    n: int, caption: str) -> Paragraph:
     """Add a numbered caption paragraph and return it.
 
-    Args:
-        doc: document to append the caption to.
-        caption_style: a CaptionStyle (prefix / template / alignment).
-        style_name: name of the Word paragraph style to apply.
-        n: caption number within its category.
-        caption: caption text.
+    `caption_style` must be fully resolved — prefix, template and
+    align are used as-is.
     """
     text = caption_style.template.format(
         prefix=caption_style.prefix, n=n, caption=caption,
