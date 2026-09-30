@@ -1,6 +1,7 @@
 """Report class — assembles all mixins into a single builder."""
 from docx import Document
 
+from .metadata import DocumentMetadata, apply_metadata
 from .mixins import (
     CodeMixin, HeadingMixin, ImageMixin, LayoutMixin,
     ListMixin, ParagraphMixin, TableMixin, TocMixin,
@@ -13,21 +14,26 @@ class Report(HeadingMixin, ParagraphMixin, ListMixin, CodeMixin,
     """Declarative docx report builder.
 
     Example:
-        from docx_report_gen import Report, b, f, link
+        from docx_report_gen import Report, DocumentMetadata
 
-        r = Report()
-        r.toc(title='Содержание', levels='1-2')
+        r = Report(
+            metadata=DocumentMetadata(
+                author='Иван Иванов',
+                title='Лабораторная работа №1',
+            ),
+        )
         r.h1('Introduction')
-        r.p('See ', link('the spec', 'https://example.org'), '.')
-        r.f(r'\\int_0^1 x^2 \\, dx', number=True)
-        r.update_toc()
         r.save('report.docx')
     """
 
-    def __init__(self, config: StylesConfig | None = None):
+    def __init__(self,
+                 config: StylesConfig | None = None,
+                 metadata: DocumentMetadata | None = None):
         self.config = config or StylesConfig()
+        self.metadata = metadata or DocumentMetadata()
         self.doc = Document()
         apply(self.doc, self.config)
+        apply_metadata(self.doc, self.metadata)
 
     def style(self, name: str):
         """Direct access to a python-docx style object."""
