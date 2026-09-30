@@ -2,30 +2,31 @@
 from docx.shared import Cm
 
 from ..styles import (
-    ALIGN, CAPTION_STYLE_NAME, resolve_caption, resolve_table,
+    ALIGN, CAPTION_STYLE_NAME, SEQ_TABLE,
+    resolve_caption, resolve_table,
 )
 from ._base import DocMixin
+from .bookmarks import BookmarkMixin
 from .utils import check_align, render_caption
 
 
-class TableMixin(DocMixin):
+class TableMixin(BookmarkMixin, DocMixin):
     """Adds table(), merge_cells(), merge_row(), merge_col() to Report.
 
-    Captioned tables are numbered automatically with a per-instance
-    counter. Uncaptered tables do not consume a number.
+    Tables with captions are numbered by a Word SEQ field — one
+    counter for all tables in the document. The counter lives in the
+    document itself, so reordering sections in Word recalculates
+    numbers automatically.
 
     Merges apply to the most recently created table. Call merge_*()
     right after table() — the reference is overwritten by each new
     table() call.
     """
 
-    _table_counter = 0
     _last_table = None
     _last_table_style = None
 
-    # ---------- public API ----------
-
-    def table(self, data, caption=None, caption_align=None,
+    def table(self, data, caption=None, caption_align=None, name=None,
               col_widths=None, col_aligns=None, header_align=None,
               style='Table Grid', header=True):
         """Insert a table, optionally preceded by a numbered caption.
@@ -35,17 +36,17 @@ class TableMixin(DocMixin):
                 Must be non-empty, rows must have equal length.
             caption: caption text; None disables the caption.
             caption_align: local alignment override for the caption.
+            name: optional bookmark name for cross-referencing via
+                Report.ref(name). Must not contain whitespace.
             col_widths: widths in cm. Either a single number applied
                 to every column, or a sequence with one entry per
                 column.
             col_aligns: alignment per column, one entry per column.
-                Values are 'left' | 'center' | 'right' | 'justify'.
             header_align: alignment for the header row; overrides
                 col_aligns on row 0.
             style: python-docx table style name.
             header: if True, the first row is bolded.
         """
-        # --- validation ---
         if not data:
             raise ValueError('table() requires a non-empty list of rows')
         widths = {len(row) for row in data}
@@ -60,17 +61,18 @@ class TableMixin(DocMixin):
         widths_cm = self._normalize_widths(col_widths, cols)
         aligns = self._normalize_aligns(col_aligns, cols)
 
-        # --- caption ---
         if caption is not None:
-            self._table_counter += 1
             cs = resolve_caption(self.config, {'align': caption_align})
+            bookmark_name, bookmark_id = self._prepare_bookmark(
+                name, kind='table',
+            )
             para = render_caption(
                 self.doc, cs, CAPTION_STYLE_NAME,
-                self._table_counter, caption,
+                caption=caption, seq_name=SEQ_TABLE,
+                bookmark_name=bookmark_name, bookmark_id=bookmark_id,
             )
             para.paragraph_format.keep_with_next = True
 
-        # --- table ---
         resolved = resolve_table(self.config, {
             'col_widths': col_widths,
             'col_aligns': aligns,
@@ -88,13 +90,11 @@ class TableMixin(DocMixin):
                         for run in cp.runs:
                             run.font.bold = True
 
-        # --- column widths ---
         if widths_cm is not None:
             for j, width in enumerate(widths_cm):
                 for row in t.rows:
                     row.cells[j].width = Cm(width)
 
-        # --- cell alignment ---
         for i in range(rows):
             for j in range(cols):
                 align = self._cell_align(
@@ -105,7 +105,6 @@ class TableMixin(DocMixin):
                 for cp in t.cell(i, j).paragraphs:
                     cp.alignment = ALIGN[align]
 
-        # --- remember for merge methods ---
         self._last_table = t
         self._last_table_style = resolved
         return self
@@ -116,9 +115,9 @@ class TableMixin(DocMixin):
         Args:
             row1, col1: top-left corner (0-based).
             row2, col2: bottom-right corner (0-based, inclusive).
-            text: optional text to place into the merged cell. If None,
-                content of the participating cells is preserved by
-                python-docx (usually messy — pass text explicitly).
+            text: optional text for the merged cell. If None, existing
+                content is preserved by python-docx (usually messy —
+                pass text explicitly).
         """
         t = self._require_last_table('merge_cells')
         cell_a = t.cell(row1, col1)
@@ -180,7 +179,6 @@ class TableMixin(DocMixin):
 
     def _set_cell_text(self, cell, text, col):
         """Clear the cell and write fresh text with column alignment."""
-        # Remove all existing paragraphs (a cell must keep at least one).
         for para in list(cell.paragraphs):
             para._element.getparent().remove(para._element)
         para = cell.add_paragraph()

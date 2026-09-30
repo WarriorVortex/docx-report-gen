@@ -6,9 +6,16 @@ from .config import (
     TableStyle, StylesConfig,
 )
 from .constants import (
-    ALIGN, CAPTION_STYLE_NAME, CODE_STYLE_NAME,
-    IMAGE_CAPTION_STYLE_NAME, LIST_BULLET_STYLES,
-    LIST_NUMBER_STYLES, QUOTE_STYLE_NAME,
+    ALIGN,
+    BOOKMARK_PREFIX,
+    CAPTION_STYLE_NAME,
+    CODE_STYLE_NAME,
+    IMAGE_CAPTION_STYLE_NAME,
+    LIST_BULLET_STYLES,
+    LIST_NUMBER_STYLES,
+    QUOTE_STYLE_NAME,
+    SEQ_FIGURE,
+    SEQ_TABLE,
 )
 from .resolvers import (
     resolve_caption, resolve_code, resolve_formula,
@@ -20,12 +27,15 @@ from .utils import resolve
 
 __all__ = [
     'ALIGN',
+    'BOOKMARK_PREFIX',
     'CAPTION_STYLE_NAME',
     'CODE_STYLE_NAME',
     'IMAGE_CAPTION_STYLE_NAME',
     'LIST_BULLET_STYLES',
     'LIST_NUMBER_STYLES',
     'QUOTE_STYLE_NAME',
+    'SEQ_FIGURE',
+    'SEQ_TABLE',
     'apply',
     'resolve',
     'resolve_title',

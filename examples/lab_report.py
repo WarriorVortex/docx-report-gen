@@ -1,7 +1,8 @@
+"""Usage example for docx-report-gen."""
 from docx_report_gen import (
     Report, StylesConfig, DocumentMetadata, HeadingStyle,
     CaptionStyle, ParagraphStyle, ListStyle, CodeStyle, QuoteStyle,
-    b, i, u, s, sup, sub, color, highlight, f, link,
+    TableStyle, b, i, u, s, sup, sub, color, highlight, f, link, ref,
 )
 
 
@@ -26,39 +27,60 @@ def main():
             font='Consolas', size=10, background='F5F5F5',
             line_spacing=1.0, space_after=0,
         ),
-        quote=QuoteStyle(
-            italic=True, left_indent=1.0, line_spacing=1.15,
+        quote=QuoteStyle(italic=True, left_indent=1.0),
+        table=TableStyle(
+            align='center',
+            col_widths=(5.0, 3.0, 3.0),
+            col_aligns=('left', 'right', 'center'),
+            header_align='center',
         ),
         caption=CaptionStyle(prefix='Таблица', align='left'),
         image_caption=CaptionStyle(prefix='Рисунок', align='center'),
     )
-    r = Report(config=config)
+    metadata = DocumentMetadata(
+        author='Иван Иванов',
+        title='Лабораторная работа №1',
+        subject='Эквивалентность массы и энергии',
+        keywords='физика, лабораторная',
+        category='Отчёт',
+    )
+    r = Report(config=config, metadata=metadata)
 
     r.title('Лабораторная работа №1')
     r.p('Выполнил: студент группы ИУ7-31', align='right')
 
+    r.toc(title='Содержание', levels='1-2')
+    r.page_break()
+
     r.h1('1. Теоретическая часть')
     r.p('Известно, что ', f('E = mc'), sup('2'),
         ', что описывает ', b('эквивалентность'),
-        ' массы и энергии. Молекула воды — H', sub('2'), 'O.')
-    r.p('Это ', u('подчёркнутый'), ' текст, это — ', s('зачёркнутый'),
-        ', это — ', color('красный', (200, 0, 0)),
-        ', а это — ', highlight('жёлтый', 'yellow'),
-        '. Ссылка: ', link('Wikipedia', 'https://wikipedia.org'), '.')
+        ' массы и энергии. Смотрите рисунок ', ref('plot'),
+        ' и таблицу ', ref('results'), '.')
 
-    r.h2('1.1. Цитата')
-    r.quote('Энергия равна массе, умноженной на квадрат скорости света.')
-
-    r.h2('1.2. Формула')
-    r.f(r"\int_a^b f(x)\,dx = F(b) - F(a)", number=True)
-
-    r.h1('2. Программная часть')
-    r.code(
-        'def energy(m, c=299_792_458):\n'
-        '    return m * c ** 2\n'
+    r.h1('2. Результаты')
+    r.img('plot.png', caption='Зависимость y(x)',
+          name='plot', width=12)
+    r.table(
+        [
+            ['Величина', 'Значение', 'Погрешность'],
+            ['Масса, кг', '1.25', '±0.01'],
+            ['Скорость, м/с', '340', '±2'],
+        ],
+        caption='Результаты измерений',
+        name='results',
     )
 
+    r.h1('3. Обсуждение')
+    r.p('Как видно из таблицы ', ref('results'),
+        ', значения согласуются с теорией, '
+        'представленной на рисунке ', ref('plot'), '.')
+
+    r.page_numbers(align='center', skip_first=True)
+    r.header('Лабораторная работа №1')
+
     r.save('lab_report.docx')
+    print('Готово: lab_report.docx')
 
 
 if __name__ == '__main__':

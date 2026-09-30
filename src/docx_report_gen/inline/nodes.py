@@ -6,13 +6,11 @@ from docx.enum.text import WD_COLOR_INDEX
 from docx.shared import RGBColor
 from docx.text.paragraph import Paragraph
 
-from .._xml import add_hyperlink
+from .._xml import add_hyperlink, add_ref_field
 
 
 RGB = tuple[int, int, int]
 
-# String name -> WD_COLOR_INDEX. Kept small and explicit; users who
-# need other shades can pass a WD_COLOR_INDEX member directly.
 _HIGHLIGHT_COLORS = {
     'yellow': WD_COLOR_INDEX.YELLOW,
     'green': WD_COLOR_INDEX.GREEN,
@@ -127,6 +125,28 @@ class Link(Inline):
         add_hyperlink(para, self.text, self.url)
 
 
+class Reference(Inline):
+    """Cross-reference to a bookmarked element.
+
+    Renders a Word REF field. Word resolves it to the current value of
+    the target's SEQ counter, so the displayed number follows any
+    renumbering after edits.
+    """
+
+    def __init__(self, name: str) -> None:
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError('ref() requires a non-empty name')
+        if any(c.isspace() for c in name):
+            raise ValueError(
+                f'ref() name must not contain whitespace: {name!r}'
+            )
+        self.name = name
+
+    def render(self, para: Paragraph) -> None:
+        from ..styles import BOOKMARK_PREFIX
+        add_ref_field(para, f'{BOOKMARK_PREFIX}{self.name}')
+
+
 # ---------- factory functions ----------
 
 def b(text: str) -> Inline:
@@ -166,11 +186,7 @@ def color(text: str, rgb: RGB) -> Inline:
 
 def highlight(text: str,
               color: Union[str, WD_COLOR_INDEX] = 'yellow') -> Inline:
-    """Highlighted inline node.
-
-    `color` is either a name from {yellow, green, cyan, magenta, blue,
-    red, gray} or a `WD_COLOR_INDEX` member.
-    """
+    """Highlighted inline node."""
     return Highlight(text, color)
 
 
@@ -182,3 +198,10 @@ def f(latex: str) -> Inline:
 def link(text: str, url: str) -> Inline:
     """Hyperlink inline node."""
     return Link(text, url)
+
+
+def ref(name: str) -> Inline:
+    """Cross-reference to a bookmark created with table(..., name=...)
+    or img(..., name=...). Renders the target's current number.
+    """
+    return Reference(name)

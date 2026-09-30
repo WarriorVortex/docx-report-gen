@@ -1,5 +1,6 @@
 """Report method mixins."""
 from ._base import DocMixin
+from .bookmarks import BookmarkMixin
 from .code import CodeMixin
 from .headings import HeadingMixin
 from .images import ImageMixin
@@ -11,6 +12,7 @@ from .toc import TocMixin
 
 __all__ = [
     'DocMixin',
+    'BookmarkMixin',
     'CodeMixin',
     'HeadingMixin',
     'ImageMixin',

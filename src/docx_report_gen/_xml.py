@@ -1,8 +1,4 @@
-"""Low-level XML helpers for python-docx features it doesn't expose.
-
-Kept at the package root so both inline/ and mixins/ can import it
-without creating cross-package dependencies.
-"""
+"""Low-level XML helpers for python-docx features it doesn't expose."""
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
@@ -64,10 +60,10 @@ def set_paragraph_bottom_border(paragraph: Paragraph, size: int = 6,
 
 def _add_field(paragraph: Paragraph, instr: str,
                placeholder: str = '', dirty: bool = False) -> None:
-    """Append a Word field code (PAGE, TOC, SEQ, ...) to the paragraph.
+    """Append a Word field code (PAGE, TOC, SEQ, REF, ...) to the paragraph.
 
-    `dirty=True` sets w:dirty on the field-begin char, which instructs
-    Word to recalculate the field when the document is opened.
+    `dirty=True` sets w:dirty on the field-begin char, so Word
+    recalculates the field when the document is opened.
     """
     run = paragraph.add_run()
     r = run._r
@@ -104,12 +100,7 @@ def add_page_number(paragraph: Paragraph) -> None:
 
 def add_toc(paragraph: Paragraph, levels: str = '1-3',
             dirty: bool = True) -> None:
-    """Insert a TOC field.
-
-    If dirty is True, Word updates the TOC automatically when the
-    document is opened. LibreOffice honours the same flag for TOC
-    fields in recent versions; otherwise use Edit → Update Fields.
-    """
+    """Insert a TOC field."""
     _add_field(
         paragraph,
         f'TOC \\o "{levels}" \\h \\z \\u',
@@ -127,11 +118,7 @@ def mark_fields_dirty(paragraph: Paragraph) -> None:
 
 
 def set_update_fields_on_open(doc, value: bool = True) -> None:
-    """Set w:updateFields in settings.xml so Word refreshes fields on open.
-
-    This is a document-level setting and complements the per-field
-    dirty flag. Applied together, they cover both Word and LibreOffice.
-    """
+    """Set w:updateFields in settings.xml so Word refreshes fields on open."""
     settings = doc.settings.element
     existing = settings.find(qn('w:updateFields'))
     if existing is not None:
@@ -139,3 +126,48 @@ def set_update_fields_on_open(doc, value: bool = True) -> None:
     el = OxmlElement('w:updateFields')
     el.set(qn('w:val'), 'true' if value else 'false')
     settings.append(el)
+
+
+# ---------- bookmarks and cross-reference fields ----------
+
+def add_bookmark_start(paragraph: Paragraph, name: str,
+                       bookmark_id: int) -> None:
+    """Open a bookmark range at the end of the paragraph."""
+    el = OxmlElement('w:bookmarkStart')
+    el.set(qn('w:id'), str(bookmark_id))
+    el.set(qn('w:name'), name)
+    paragraph._p.append(el)
+
+
+def add_bookmark_end(paragraph: Paragraph, bookmark_id: int) -> None:
+    """Close a bookmark range previously opened with add_bookmark_start."""
+    el = OxmlElement('w:bookmarkEnd')
+    el.set(qn('w:id'), str(bookmark_id))
+    paragraph._p.append(el)
+
+
+def add_seq_field(paragraph: Paragraph, seq_name: str) -> None:
+    """Insert a SEQ field — Word's per-name auto-increment counter.
+
+    Each SEQ <name> gets a sequential number on update. Names must be
+    unique per counter — e.g. 'Table' for tables, 'Figure' for images.
+    """
+    _add_field(
+        paragraph,
+        f'SEQ {seq_name} \\* ARABIC',
+        '1',
+        dirty=True,
+    )
+
+
+def add_ref_field(paragraph: Paragraph, bookmark_name: str) -> None:
+    """Insert a REF field pointing at a bookmark.
+
+    The trailing \\h flag makes the reference a hyperlink in Word.
+    """
+    _add_field(
+        paragraph,
+        f'REF {bookmark_name} \\h',
+        '1',
+        dirty=True,
+    )
