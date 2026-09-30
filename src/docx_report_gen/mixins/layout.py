@@ -1,14 +1,12 @@
 """Layout methods mixin."""
-from .._xml import (
-    add_page_number, add_toc, set_paragraph_bottom_border,
-)
+from .._xml import add_page_number, set_paragraph_bottom_border
 from ..styles import ALIGN
 from ._base import DocMixin
 
 
 class LayoutMixin(DocMixin):
-    """Adds page_break(), hr(), header(), footer(), page_numbers(),
-    toc() to Report."""
+    """Adds page_break(), hr(), header(), footer(), page_numbers()
+    to Report."""
 
     def page_break(self):
         """Insert a page break."""
@@ -55,15 +53,4 @@ class LayoutMixin(DocMixin):
             para = section.footer.paragraphs[0]
             para.alignment = ALIGN[align]
             add_page_number(para)
-        return self
-
-    def toc(self, title=None, levels='1-3'):
-        """Insert a table of contents field.
-
-        Word updates the field on open, or manually via F9.
-        """
-        if title:
-            self.doc.add_heading(title, level=1)
-        para = self.doc.add_paragraph()
-        add_toc(para, levels)
         return self

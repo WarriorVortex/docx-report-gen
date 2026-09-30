@@ -7,6 +7,7 @@ from .layout import LayoutMixin
 from .lists import ListMixin
 from .paragraphs import ParagraphMixin
 from .tables import TableMixin
+from .toc import TocMixin
 
 __all__ = [
     'DocMixin',
@@ -17,4 +18,5 @@ __all__ = [
     'ListMixin',
     'ParagraphMixin',
     'TableMixin',
+    'TocMixin',
 ]

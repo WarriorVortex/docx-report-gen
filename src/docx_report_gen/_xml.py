@@ -63,13 +63,19 @@ def set_paragraph_bottom_border(paragraph: Paragraph, size: int = 6,
 
 
 def _add_field(paragraph: Paragraph, instr: str,
-               placeholder: str = '') -> None:
-    """Append a Word field code (PAGE, TOC, SEQ, ...) to the paragraph."""
+               placeholder: str = '', dirty: bool = False) -> None:
+    """Append a Word field code (PAGE, TOC, SEQ, ...) to the paragraph.
+
+    `dirty=True` sets w:dirty on the field-begin char, which instructs
+    Word to recalculate the field when the document is opened.
+    """
     run = paragraph.add_run()
     r = run._r
 
     fld_begin = OxmlElement('w:fldChar')
     fld_begin.set(qn('w:fldCharType'), 'begin')
+    if dirty:
+        fld_begin.set(qn('w:dirty'), 'true')
 
     instr_el = OxmlElement('w:instrText')
     instr_el.set(qn('xml:space'), 'preserve')
@@ -96,10 +102,40 @@ def add_page_number(paragraph: Paragraph) -> None:
     _add_field(paragraph, 'PAGE', '1')
 
 
-def add_toc(paragraph: Paragraph, levels: str = '1-3') -> None:
-    """Insert a TOC field. Word updates it on open, or via F9."""
+def add_toc(paragraph: Paragraph, levels: str = '1-3',
+            dirty: bool = True) -> None:
+    """Insert a TOC field.
+
+    If dirty is True, Word updates the TOC automatically when the
+    document is opened. LibreOffice honours the same flag for TOC
+    fields in recent versions; otherwise use Edit → Update Fields.
+    """
     _add_field(
         paragraph,
         f'TOC \\o "{levels}" \\h \\z \\u',
         'Right-click and choose "Update Field".',
+        dirty=dirty,
     )
+
+
+def mark_fields_dirty(paragraph: Paragraph) -> None:
+    """Set w:dirty="true" on every field-begin char in the paragraph."""
+    for run in paragraph.runs:
+        for fld in run._r.findall(qn('w:fldChar')):
+            if fld.get(qn('w:fldCharType')) == 'begin':
+                fld.set(qn('w:dirty'), 'true')
+
+
+def set_update_fields_on_open(doc, value: bool = True) -> None:
+    """Set w:updateFields in settings.xml so Word refreshes fields on open.
+
+    This is a document-level setting and complements the per-field
+    dirty flag. Applied together, they cover both Word and LibreOffice.
+    """
+    settings = doc.settings.element
+    existing = settings.find(qn('w:updateFields'))
+    if existing is not None:
+        settings.remove(existing)
+    el = OxmlElement('w:updateFields')
+    el.set(qn('w:val'), 'true' if value else 'false')
+    settings.append(el)

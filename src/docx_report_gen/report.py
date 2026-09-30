@@ -2,25 +2,25 @@
 from docx import Document
 
 from .mixins import (
-    HeadingMixin, ImageMixin, LayoutMixin,
-    ParagraphMixin, TableMixin,
+    CodeMixin, HeadingMixin, ImageMixin, LayoutMixin,
+    ListMixin, ParagraphMixin, TableMixin, TocMixin,
 )
 from .styles import StylesConfig, apply
 
 
-class Report(HeadingMixin, ParagraphMixin, TableMixin, ImageMixin,
-              LayoutMixin):
+class Report(HeadingMixin, ParagraphMixin, ListMixin, CodeMixin,
+              TableMixin, ImageMixin, TocMixin, LayoutMixin):
     """Declarative docx report builder.
 
     Example:
-        from docx_report_gen import Report, StylesConfig, b, f
+        from docx_report_gen import Report, b, f, link
 
-        config = StylesConfig(font='Times New Roman')
-        r = Report(config=config)
+        r = Report()
+        r.toc(title='Содержание', levels='1-2')
         r.h1('Introduction')
-        r.p('The ', b('key'), ' relation is ', f('E = mc^2'), '.')
-        r.img('plot.png', caption='Dependency plot', width=12)
-        r.table([[1, 2], [3, 4]], caption='Experimental data')
+        r.p('See ', link('the spec', 'https://example.org'), '.')
+        r.f(r'\\int_0^1 x^2 \\, dx', number=True)
+        r.update_toc()
         r.save('report.docx')
     """
 

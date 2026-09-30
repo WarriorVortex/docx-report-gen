@@ -5,6 +5,7 @@ from .styles import (
     CaptionStyle, CodeStyle, HeadingStyle, ImageStyle,
     ListStyle, ParagraphStyle, QuoteStyle, StylesConfig,
 )
+from importlib.metadata import version, PackageNotFoundError
 
 __all__ = [
     'Report',
@@ -18,4 +19,8 @@ __all__ = [
     'QuoteStyle',
     'b', 'i', 'f', 'link',
 ]
-__version__ = '0.2.1'
+
+try:
+    __version__ = version("docx-report-gen")
+except PackageNotFoundError:
+    __version__ = "0.0.0+unknown"
