@@ -8,7 +8,8 @@ from .metadata import DocumentMetadata
 from .report import Report
 from .styles import (
     CaptionStyle, CodeStyle, HeadingStyle, ImageStyle,
-    LayoutStyle, ListStyle, ParagraphStyle, QuoteStyle, StylesConfig,
+    LayoutStyle, ListStyle, ParagraphStyle, QuoteStyle,
+    TableStyle, StylesConfig,
 )
 
 try:
@@ -27,6 +28,7 @@ __all__ = [
     'ListStyle',
     'CodeStyle',
     'QuoteStyle',
+    'TableStyle',
     'LayoutStyle',
     'b', 'i', 'u', 's', 'sup', 'sub', 'color', 'highlight', 'f', 'link',
 ]

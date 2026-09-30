@@ -3,7 +3,7 @@ from dataclasses import replace
 
 from .config import (
     CaptionStyle, CodeStyle, HeadingStyle, ImageStyle,
-    ListStyle, ParagraphStyle, QuoteStyle,
+    ListStyle, ParagraphStyle, QuoteStyle, TableStyle,
 )
 from .utils import resolve
 
@@ -52,3 +52,7 @@ def resolve_code(config, local=None):
 
 def resolve_quote(config, local=None):
     return resolve(QuoteStyle, local, config.quote, config)
+
+
+def resolve_table(config, local=None):
+    return resolve(TableStyle, local, config.table, config)

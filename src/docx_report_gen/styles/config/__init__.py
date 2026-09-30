@@ -8,6 +8,7 @@ from .layout import LayoutStyle
 from .list import ListStyle
 from .paragraph import ParagraphStyle
 from .quote import QuoteStyle
+from .table import TableStyle
 from .types import RGB
 
 __all__ = [
@@ -19,6 +20,7 @@ __all__ = [
     'ListStyle',
     'CodeStyle',
     'QuoteStyle',
+    'TableStyle',
     'LayoutStyle',
     'StylesConfig',
 ]

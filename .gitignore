@@ -1,0 +1,12 @@
+# ENV
+.venv
+.venv/*
+
+# DEV
+*.egg-info
+
+# IDE
+.idea
+.idea/*
+.vscode
+.vscode/*

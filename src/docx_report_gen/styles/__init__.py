@@ -2,7 +2,8 @@
 from .apply import apply
 from .config import (
     CaptionStyle, CodeStyle, HeadingStyle, ImageStyle,
-    LayoutStyle, ListStyle, ParagraphStyle, QuoteStyle, StylesConfig,
+    LayoutStyle, ListStyle, ParagraphStyle, QuoteStyle,
+    TableStyle, StylesConfig,
 )
 from .constants import (
     ALIGN, CAPTION_STYLE_NAME, CODE_STYLE_NAME,
@@ -12,7 +13,8 @@ from .constants import (
 from .resolvers import (
     resolve_caption, resolve_code, resolve_formula,
     resolve_heading, resolve_image, resolve_image_caption,
-    resolve_list, resolve_paragraph, resolve_quote, resolve_title,
+    resolve_list, resolve_paragraph, resolve_quote,
+    resolve_table, resolve_title,
 )
 from .utils import resolve
 
@@ -36,6 +38,7 @@ __all__ = [
     'resolve_list',
     'resolve_code',
     'resolve_quote',
+    'resolve_table',
     'CaptionStyle',
     'CodeStyle',
     'HeadingStyle',
@@ -44,5 +47,6 @@ __all__ = [
     'ListStyle',
     'ParagraphStyle',
     'QuoteStyle',
+    'TableStyle',
     'StylesConfig',
 ]

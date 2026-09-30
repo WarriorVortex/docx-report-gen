@@ -9,6 +9,7 @@ from .image import ImageStyle
 from .list import ListStyle
 from .paragraph import ParagraphStyle
 from .quote import QuoteStyle
+from .table import TableStyle
 from .types import RGB
 
 
@@ -50,6 +51,9 @@ class StylesConfig:
     list: ListStyle = field(default_factory=ListStyle)
     code: CodeStyle = field(default_factory=CodeStyle)
     quote: QuoteStyle = field(default_factory=QuoteStyle)
+
+    # Tables.
+    table: TableStyle = field(default_factory=TableStyle)
 
     # Captions.
     caption: CaptionStyle = field(default_factory=CaptionStyle)
