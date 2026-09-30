@@ -3,13 +3,12 @@ from docx.enum.text import WD_TAB_ALIGNMENT
 
 import math2docx
 
-from .._xml import add_page_number  # noqa: F401 (kept for future use)
-from ..inline import Inline
 from ..styles import (
-    ALIGN, QUOTE_STYLE_NAME,
+    QUOTE_STYLE_NAME,
     resolve_formula, resolve_paragraph, resolve_quote,
 )
 from ._base import DocMixin
+from .utils import apply_layout, check_align, check_parts
 
 
 class ParagraphMixin(DocMixin):
@@ -17,21 +16,34 @@ class ParagraphMixin(DocMixin):
 
     _formula_counter = 0
 
-    def p(self, *parts, align=None):
-        """Paragraph from strings and inline nodes (b, i, f, link)."""
-        resolved = resolve_paragraph(self.config, {'align': align})
+    def p(self, *parts, align=None, line_spacing=None,
+          space_before=None, space_after=None, first_line_indent=None):
+        """Paragraph from strings and inline nodes.
+
+        Args:
+            *parts: strings and inline nodes (b, i, u, s, sup, sub,
+                color, highlight, f, link).
+            align, line_spacing, space_before, space_after,
+            first_line_indent: local layout overrides. None falls back
+                to StylesConfig.paragraph, then to StylesConfig itself.
+        """
+        check_align(align, where='p')
+        check_parts(parts, where='p')
+        local = {
+            'align': align,
+            'line_spacing': line_spacing,
+            'space_before': space_before,
+            'space_after': space_after,
+            'first_line_indent': first_line_indent,
+        }
+        resolved = resolve_paragraph(self.config, local)
         para = self.doc.add_paragraph()
-        para.alignment = ALIGN[resolved.align]
+        apply_layout(para, resolved)
         for part in parts:
             if isinstance(part, str):
                 para.add_run(part)
-            elif isinstance(part, Inline):
-                part.render(para)
             else:
-                raise TypeError(
-                    f'p() accepts str or inline nodes, '
-                    f'got {type(part).__name__}'
-                )
+                part.render(para)
         return self
 
     def f(self, latex, align=None, number=False):
@@ -41,9 +53,9 @@ class ParagraphMixin(DocMixin):
             latex: formula in LaTeX.
             align: alignment override when `number` is False.
             number: if True, the formula is centered and its number
-                `(N)` is right-aligned on the same line. Word will
-                update the layout via tab stops.
+                `(N)` is right-aligned on the same line.
         """
+        check_align(align, where='f')
         para = self.doc.add_paragraph()
         if number:
             self._formula_counter += 1
@@ -54,25 +66,32 @@ class ParagraphMixin(DocMixin):
             para.add_run(f'({self._formula_counter})')
         else:
             resolved = resolve_formula(self.config, {'align': align})
-            para.alignment = ALIGN[resolved.align]
+            apply_layout(para, resolved)
             math2docx.add_math(para, latex)
         return self
 
-    def quote(self, *parts, align=None):
+    def quote(self, *parts, align=None, line_spacing=None,
+              space_before=None, space_after=None,
+              first_line_indent=None, left_indent=None):
         """Block quote paragraph."""
-        resolved = resolve_quote(self.config, {'align': align})
+        check_align(align, where='quote')
+        check_parts(parts, where='quote')
+        local = {
+            'align': align,
+            'line_spacing': line_spacing,
+            'space_before': space_before,
+            'space_after': space_after,
+            'first_line_indent': first_line_indent,
+            'left_indent': left_indent,
+        }
+        resolved = resolve_quote(self.config, local)
         para = self.doc.add_paragraph(style=QUOTE_STYLE_NAME)
-        para.alignment = ALIGN[resolved.align]
+        apply_layout(para, resolved)
         for part in parts:
             if isinstance(part, str):
                 para.add_run(part)
-            elif isinstance(part, Inline):
-                part.render(para)
             else:
-                raise TypeError(
-                    f'quote() accepts str or inline nodes, '
-                    f'got {type(part).__name__}'
-                )
+                part.render(para)
         return self
 
     def _setup_formula_tabs(self, para):

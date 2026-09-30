@@ -2,7 +2,7 @@
 from .apply import apply
 from .config import (
     CaptionStyle, CodeStyle, HeadingStyle, ImageStyle,
-    ListStyle, ParagraphStyle, QuoteStyle, StylesConfig,
+    LayoutStyle, ListStyle, ParagraphStyle, QuoteStyle, StylesConfig,
 )
 from .constants import (
     ALIGN, CAPTION_STYLE_NAME, CODE_STYLE_NAME,
@@ -40,6 +40,7 @@ __all__ = [
     'CodeStyle',
     'HeadingStyle',
     'ImageStyle',
+    'LayoutStyle',
     'ListStyle',
     'ParagraphStyle',
     'QuoteStyle',

@@ -1,12 +1,14 @@
 """docx-report-gen — a minimal wrapper for generating docx reports."""
 from importlib.metadata import version, PackageNotFoundError
 
-from .inline import b, i, f, link
+from .inline import (
+    b, i, u, s, sup, sub, color, highlight, f, link,
+)
 from .metadata import DocumentMetadata
 from .report import Report
 from .styles import (
     CaptionStyle, CodeStyle, HeadingStyle, ImageStyle,
-    ListStyle, ParagraphStyle, QuoteStyle, StylesConfig,
+    LayoutStyle, ListStyle, ParagraphStyle, QuoteStyle, StylesConfig,
 )
 
 try:
@@ -25,5 +27,6 @@ __all__ = [
     'ListStyle',
     'CodeStyle',
     'QuoteStyle',
-    'b', 'i', 'f', 'link',
+    'LayoutStyle',
+    'b', 'i', 'u', 's', 'sup', 'sub', 'color', 'highlight', 'f', 'link',
 ]

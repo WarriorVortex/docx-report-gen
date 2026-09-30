@@ -2,14 +2,13 @@
 from dataclasses import dataclass
 from typing import Optional
 
+from .layout import LayoutStyle
 from .types import RGB
 
 
 @dataclass
-class QuoteStyle:
+class QuoteStyle(LayoutStyle):
     """Style for block quotes."""
-    align: Optional[str] = None
-    indent: Optional[float] = 1.0   # cm
     font: Optional[str] = None
     size: Optional[int] = None
     color: Optional[RGB] = None
