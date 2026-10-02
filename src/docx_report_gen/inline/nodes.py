@@ -10,23 +10,11 @@ from .._utils import add_hyperlink, add_ref_field
 from ..styles.config.types import RGB
 
 
-# Public alias: users may pass either a WML color name (str) or a
-# WD_COLOR_INDEX member to highlight(). Alias re-exported from
-# docx_report_gen.inline for convenience.
 HighlightColor = WD_COLOR_INDEX
 
 
 def _build_highlight_colors() -> dict[str, WD_COLOR_INDEX]:
-    """Map WML string names to WD_COLOR_INDEX members.
-
-    Reads `xml_value` of each member, so the mapping stays in sync with
-    python-docx's enum without manual maintenance. Members without an
-    xml_value (INHERITED) are skipped.
-
-    Valid names include: 'default', 'black', 'white', 'blue', 'darkBlue',
-    'red', 'darkRed', 'yellow', 'darkYellow', 'green', 'darkGreen',
-    'cyan', 'darkCyan', 'magenta', 'darkMagenta', 'lightGray', 'darkGray'.
-    """
+    """Map WML string names to WD_COLOR_INDEX members."""
     result: dict[str, WD_COLOR_INDEX] = {}
     for member in WD_COLOR_INDEX:
         xml = member.xml_value
@@ -36,6 +24,10 @@ def _build_highlight_colors() -> dict[str, WD_COLOR_INDEX]:
 
 
 _HIGHLIGHT_COLORS: dict[str, WD_COLOR_INDEX] = _build_highlight_colors()
+
+
+# Font used by CodeInline. Word substitutes if the font is unavailable.
+_CODE_FONT = 'Consolas'
 
 
 class Inline:
@@ -111,7 +103,7 @@ class Highlight(Inline):
     ) -> None:
         self.text: str = text
         if isinstance(color, str):
-            key = color  # WML names are case-sensitive: 'lightGray', 'darkGreen', etc.
+            key = color
             if key not in _HIGHLIGHT_COLORS:
                 raise ValueError(
                     f"unknown highlight color {color!r}; "
@@ -125,6 +117,21 @@ class Highlight(Inline):
     def render(self, para: Paragraph) -> None:
         run = para.add_run(self.text)
         run.font.highlight_color = self.color
+
+
+class CodeInline(Inline):
+    """Inline code — monospace run inside a paragraph.
+
+    For a full code block with shading and line handling, use the
+    block form: `code.block(text)` in the writer API, or Report.code.
+    """
+
+    def __init__(self, text: str) -> None:
+        self.text: str = text
+
+    def render(self, para: Paragraph) -> None:
+        run = para.add_run(self.text)
+        run.font.name = _CODE_FONT
 
 
 class Formula(Inline):
@@ -150,7 +157,7 @@ class Reference(Inline):
     def __init__(self, name: str) -> None:
         if not isinstance(name, str) or not name.strip():
             raise ValueError('ref() requires a non-empty name')
-        if any(c.isspace() for c in name):
+        if any(ch.isspace() for ch in name):
             raise ValueError(
                 f'ref() name must not contain whitespace: {name!r}'
             )
@@ -202,12 +209,17 @@ def highlight(
     text: str,
     color: Union[str, HighlightColor] = 'yellow',
 ) -> Inline:
-    """Highlighted inline node.
-
-    `color` is either a WML color name (e.g. 'yellow', 'cyan', 'magenta',
-    'lightGray', 'darkGreen') or a WD_COLOR_INDEX member.
-    """
+    """Highlighted inline node."""
     return Highlight(text, color)
+
+
+def code(text: str) -> Inline:
+    """Inline code — monospace text inside a paragraph.
+
+    Counterpart of the block form `writer.code.block(...)`. Use this
+    for short identifiers or expressions inside running text.
+    """
+    return CodeInline(text)
 
 
 def f(latex: str) -> Inline:

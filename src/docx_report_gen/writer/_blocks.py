@@ -1,7 +1,12 @@
-"""Block-level delegations to Report, plus formula and save."""
-from typing import Any, Callable, Optional
+"""Block-level delegations to Report.
 
-from ..styles import AlignLiteral
+`f` (formula) and `code` (code) are defined in _formula.py and
+_code.py — they do not delegate directly, because a bare call returns
+an Inline node rather than adding content. Use `f.block(...)` and
+`code.block(...)` for block-level forms.
+"""
+from typing import Any, Callable
+
 from ._state import current
 
 
@@ -31,12 +36,11 @@ h6 = _block('h6')
 page_break = _block('page_break')
 hr = _block('hr')
 
-# content
+# content (block-only)
 p = _block('p')
 quote = _block('quote')
 ul = _block('ul')
 ol = _block('ol')
-code = _block('code')
 table = _block('table')
 img = _block('img')
 
@@ -51,19 +55,6 @@ page_numbers = _block('page_numbers')
 merge_cells = _block('merge_cells')
 merge_row = _block('merge_row')
 merge_col = _block('merge_col')
-
-
-def formula(
-    latex: str,
-    align: Optional[AlignLiteral] = None,
-    number: bool = False,
-) -> None:
-    """Block-level formula (delegates to Report.f).
-
-    Named `formula`, not `f`, because `writer.f` is the inline
-    formula factory re-exported from docx_report_gen.inline.
-    """
-    current().f(latex, align=align, number=number)
 
 
 def save(path: str) -> None:

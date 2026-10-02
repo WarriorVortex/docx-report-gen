@@ -9,23 +9,29 @@ Example:
 
     title('Отчёт')
     h1('Введение')
-    p('Формула: ', f('E = mc^2'))
+    p('Формула: ', f('E = mc^2'))            # inline formula
+    p('Функция ', code('print'), ' выводит') # inline code
+    f.block('E = mc^2')                       # block formula
+    code.block('def f(x):\\n    return x ** 2')  # block code
     table([['A', 'B'], [1, 2]], caption='Данные')
     save('out.docx')
 
+Accessor pattern:
+
+    f('latex')            -> returns an Inline Formula node
+    f.block('latex')      -> adds a block formula paragraph
+
+    code('text')          -> returns an Inline CodeInline node
+    code.block('text')    -> adds a block code paragraph
+
+Bare calls do not modify the document; the .block() methods do.
+
 Runtime configuration:
 
-    set_config(StylesConfig(font='Arial'))   # replaces and re-applies
+    set_config(StylesConfig(font='Arial'))
     set_metadata(DocumentMetadata(author='X'))
-    apply_styles()                            # after in-place config edit
-    sync_metadata()                           # flush metadata to core props
-
-The public surface is assembled from four submodules:
-
-    _state     session lifecycle: new, attach, detach, current, ...
-    _config    config, metadata and style accessors
-    _plugins   plugin registration and local block/inline shortcuts
-    _blocks    block-level delegations (h1..h6, p, table, ...)
+    apply_styles()
+    sync_metadata()
 
 Block-level functions return None. For chained calls, use the Report
 object API directly.
@@ -37,22 +43,25 @@ from typing import Any
 # re-export chains poorly when a package also defines a module-level
 # __getattr__ (which this file does). Importing from .nodes gives
 # the IDE a concrete module with concrete `def` statements to bind.
+# `f` and `code` are imported from their accessor modules instead.
 from ..inline.nodes import (
-    b, i, u, s, sup, sub, color, highlight, f, link, ref,
+    b, i, u, s, sup, sub, color, highlight, link, ref,
 )
 from ._blocks import (
     title,
     h1, h2, h3, h4, h5, h6,
     page_break, hr,
-    p, quote, ul, ol, code, table, img,
+    p, quote, ul, ol, table, img,
     toc, update_toc, header, footer, page_numbers,
     merge_cells, merge_row, merge_col,
-    formula, save,
+    save,
 )
+from ._code import code
 from ._config import (
     apply_styles, config, metadata, set_config, set_metadata,
     style, sync_metadata,
 )
+from ._formula import f
 from ._plugins import (
     block, inline_node, plugins,
     register_plugin, unregister_plugin,
@@ -76,16 +85,19 @@ __all__ = [
     # document structure
     'title', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
     'page_break', 'hr',
-    # content
-    'p', 'formula', 'quote', 'ul', 'ol', 'code', 'table', 'img',
+    # content — block-only
+    'p', 'quote', 'ul', 'ol', 'table', 'img',
     'merge_cells', 'merge_row', 'merge_col',
     # page furniture
     'toc', 'update_toc', 'header', 'footer', 'page_numbers',
     # lifecycle
     'save', 'close',
+    # accessors — bare call returns Inline; .block(...) adds paragraph
+    'f',     # formula:  f('x^2') / f.block('x^2')
+    'code',  # code:     code('print') / code.block('def f(): ...')
     # inline factories
     'b', 'i', 'u', 's', 'sup', 'sub', 'color', 'highlight',
-    'f', 'link', 'ref',
+    'link', 'ref',
 ]
 
 

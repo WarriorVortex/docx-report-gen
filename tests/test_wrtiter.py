@@ -9,7 +9,8 @@ import pytest
 from docx import Document
 
 from docx_report_gen import writer, Report, StylesConfig, DocumentMetadata
-from docx_report_gen.inline import Inline
+from docx_report_gen.inline import CodeInline, Formula, Inline
+from docx_report_gen.plugins import plugins as global_plugins
 
 
 @pytest.fixture(autouse=True)
@@ -51,6 +52,13 @@ def test_inline_factory_does_not_create_report():
     """Calling writer.f (an inline factory) is not a block-level call."""
     import docx_report_gen.writer as w
     writer.f('x^2')
+    assert w._state._current is None
+
+
+def test_inline_code_does_not_create_report():
+    """Bare code(...) returns an Inline node; does not touch the report."""
+    import docx_report_gen.writer as w
+    writer.code('print')
     assert w._state._current is None
 
 
@@ -259,16 +267,10 @@ def test_p_with_inline_formula():
     assert paragraphs[0].text.startswith('See')
 
 
-def test_formula_block():
-    writer.formula('E = mc^2')
+def test_p_with_inline_code():
+    writer.p('Function ', writer.code('print'), ' outputs text')
     paragraphs = writer.current().doc.paragraphs
-    assert len(paragraphs) == 1
-
-
-def test_formula_numbered():
-    writer.formula('x^2', number=True)
-    paragraphs = writer.current().doc.paragraphs
-    assert '(1)' in paragraphs[0].text
+    assert paragraphs[0].text == 'Function print outputs text'
 
 
 def test_table():
@@ -297,13 +299,6 @@ def test_ul_and_ol():
     assert 'x' in texts
 
 
-def test_code():
-    writer.code('x = 1\ny = 2')
-    texts = [p.text for p in writer.current().doc.paragraphs]
-    assert 'x = 1' in texts
-    assert 'y = 2' in texts
-
-
 def test_quote():
     writer.quote('A quote')
     texts = [p.text for p in writer.current().doc.paragraphs]
@@ -313,6 +308,76 @@ def test_quote():
 def test_img(png_image):
     writer.img(png_image)
     assert len(writer.current().doc.inline_shapes) == 1
+
+
+# ---------- accessor: formula ----------
+
+def test_formula_inline_returns_node():
+    """Bare f(...) returns an Inline object; does not touch the report."""
+    import docx_report_gen.writer as w
+    node = writer.f('E = mc^2')
+    assert isinstance(node, Formula)
+    assert w._state._current is None
+
+
+def test_formula_block_adds_paragraph():
+    writer.f.block('E = mc^2')
+    paragraphs = writer.current().doc.paragraphs
+    assert len(paragraphs) == 1
+
+
+def test_formula_block_numbered():
+    writer.f.block('x^2', number=True)
+    paragraphs = writer.current().doc.paragraphs
+    assert '(1)' in paragraphs[0].text
+
+
+def test_formula_block_unnumbered_does_not_consume_counter():
+    writer.f.block('a', number=True)
+    writer.f.block('b')
+    writer.f.block('c', number=True)
+    paragraphs = writer.current().doc.paragraphs
+    assert '(1)' in paragraphs[0].text
+    assert '(2)' in paragraphs[2].text
+
+
+def test_formula_block_returns_none():
+    assert writer.f.block('x') is None
+
+
+# ---------- accessor: code ----------
+
+def test_code_inline_returns_node():
+    """Bare code(...) returns an Inline object; does not touch the report."""
+    import docx_report_gen.writer as w
+    node = writer.code('print')
+    assert isinstance(node, CodeInline)
+    assert w._state._current is None
+
+
+def test_code_block_adds_paragraphs():
+    writer.code.block('x = 1\ny = 2')
+    paras = writer.current().doc.paragraphs
+    assert len(paras) == 2
+    assert paras[0].text == 'x = 1'
+    assert paras[1].text == 'y = 2'
+
+
+def test_code_block_accepts_language():
+    writer.code.block('x = 1', language='python')
+    paras = writer.current().doc.paragraphs
+    assert paras[0].text == 'x = 1'
+
+
+def test_code_block_accepts_align():
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    writer.code.block('x', align='center')
+    paras = writer.current().doc.paragraphs
+    assert paras[0].alignment == WD_ALIGN_PARAGRAPH.CENTER
+
+
+def test_code_block_returns_none():
+    assert writer.code.block('x') is None
 
 
 # ---------- block delegation: page furniture ----------
@@ -347,6 +412,7 @@ def test_inline_factories_available():
     assert writer.color('x', (0, 0, 0)) is not None
     assert writer.highlight('x') is not None
     assert writer.f('x^2') is not None
+    assert writer.code('x = 1') is not None
     assert writer.link('x', 'https://e.com') is not None
     assert writer.ref('name') is not None
 
@@ -544,7 +610,3 @@ def test_block_methods_return_none():
     assert writer.h1('X') is None
     assert writer.p('Y') is None
     assert writer.table([['A']]) is None
-
-
-def test_formula_returns_none():
-    assert writer.formula('x') is None

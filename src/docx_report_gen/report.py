@@ -1,5 +1,5 @@
 """Report class — assembles all mixins into a single builder."""
-from typing import Optional
+from typing import Optional, Any
 
 from docx import Document
 
@@ -118,7 +118,7 @@ class Report(HeadingMixin, ParagraphMixin, ListMixin, CodeMixin,
 
     # ---------- accessors ----------
 
-    def style(self, name: str):
+    def style(self, name: str) -> Any:
         """Direct access to a python-docx style object."""
         return self.doc.styles[name]
 

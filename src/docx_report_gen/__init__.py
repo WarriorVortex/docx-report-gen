@@ -4,7 +4,7 @@ from importlib.metadata import version, PackageNotFoundError
 from . import docx
 from . import writer
 from .inline import (
-    b, i, u, s, sup, sub, color, highlight, f, link, ref,
+    b, i, u, s, sup, sub, color, highlight, code, f, link, ref,
 )
 from .metadata import DocumentMetadata
 from .plugins import Plugin, PluginsRegistry
@@ -36,7 +36,7 @@ __all__ = [
     'TableStyle',
     'LayoutStyle',
     'b', 'i', 'u', 's', 'sup', 'sub', 'color', 'highlight',
-    'f', 'link', 'ref',
+    'code', 'f', 'link', 'ref',
     'docx',
     'writer',
 ]

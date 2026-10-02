@@ -46,5 +46,5 @@ exclude_lines = [
 strict = true
 mypy_path = "src"
 files = ["src/docx_report_gen"]
-
 disallow_untyped_calls = false
+explicit_package_bases = true
