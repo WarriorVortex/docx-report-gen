@@ -6,7 +6,7 @@ from docx.enum.text import WD_COLOR_INDEX
 from docx.shared import RGBColor
 from docx.text.paragraph import Paragraph
 
-from .._xml import add_hyperlink, add_ref_field
+from .._utils import add_hyperlink, add_ref_field
 from ..styles.config.types import RGB
 
 

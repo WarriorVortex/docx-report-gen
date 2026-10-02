@@ -1,11 +1,11 @@
 """Apply page-level settings (margins)."""
 from docx.shared import Cm
 
-from ..._docx import DocumentProtocol
+from ..._docx import DocxDocument
 from ..config import StylesConfig
 
 
-def apply_margins(doc: DocumentProtocol, config: StylesConfig) -> None:
+def apply_margins(doc: DocxDocument, config: StylesConfig) -> None:
     if not config.margins:
         return
     top, right, bottom, left = config.margins

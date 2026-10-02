@@ -8,6 +8,7 @@ import zipfile
 
 import pytest
 from docx import Document
+from docx.document import Document as DocxDocument
 
 from docx_report_gen import (
     Report, StylesConfig, DocumentMetadata,
@@ -27,7 +28,7 @@ def test_report_saves_and_reopens(saved_docx, reopen):
     assert saved_docx.exists()
     assert saved_docx.stat().st_size > 0
     doc = reopen()
-    assert isinstance(doc, Document)
+    assert isinstance(doc, DocxDocument)
 
 
 def test_saved_docx_is_valid_zip(saved_docx):
@@ -133,7 +134,7 @@ def test_block_formula(report, docx_path):
     doc = Document(str(docx_path))
     # Formula content lives in OMML; python-docx paragraph text is empty.
     # We only verify the document is saved and reopens cleanly.
-    assert isinstance(doc, Document)
+    assert isinstance(doc, DocxDocument)
 
 
 # ---------- structure ----------

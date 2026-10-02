@@ -1,14 +1,15 @@
 """Report class — assembles all mixins into a single builder."""
-from typing import Optional
+from typing import Any, Optional
 
 from docx import Document
 
-from ._docx import DocumentProtocol
+from ._docx import DocxDocument
 from .metadata import DocumentMetadata, apply_metadata
 from .mixins import (
     BookmarkMixin, CodeMixin, HeadingMixin, ImageMixin, LayoutMixin,
     ListMixin, ParagraphMixin, PluginMixin, TableMixin, TocMixin,
 )
+from .plugins import Plugin
 from .styles import StylesConfig, apply
 
 
@@ -17,13 +18,13 @@ class Report(HeadingMixin, ParagraphMixin, ListMixin, CodeMixin,
               LayoutMixin, PluginMixin):
     """Declarative docx report builder."""
 
-    doc: DocumentProtocol
+    doc: DocxDocument
 
     def __init__(
         self,
         config: Optional[StylesConfig] = None,
         metadata: Optional[DocumentMetadata] = None,
-        plugins: Optional[list] = None,
+        plugins: Optional[list[Plugin]] = None,
     ) -> None:
         self.config = config or StylesConfig()
         self.metadata = metadata or DocumentMetadata()
@@ -39,7 +40,7 @@ class Report(HeadingMixin, ParagraphMixin, ListMixin, CodeMixin,
         # Plugins must see a fully configured document.
         self._init_plugins(plugins)
 
-    def style(self, name: str):
+    def style(self, name: str) -> Any:
         """Direct access to a python-docx style object."""
         return self.doc.styles[name]
 

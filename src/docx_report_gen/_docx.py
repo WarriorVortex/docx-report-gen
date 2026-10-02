@@ -1,52 +1,15 @@
-"""Structural types for python-docx objects used by the package.
+"""Single point of import for the real python-docx Document class.
 
-python-docx does not ship a py.typed marker, and its public `Document`
-name is a factory function, not a class. Referencing the real class in
-annotations is unreliable across mypy setups. Instead, we declare a
-narrow Protocol covering exactly the members the package touches.
-Real python-docx documents satisfy it structurally — no inheritance
-needed, no runtime cost.
+The name `Document` is exported from `docx.api` as a factory function,
+not as a class. Using it in type annotations fails: mypy reports
+"Function 'Document' is not valid as a type". The real class lives in
+`docx.document`; the factory returns instances of it.
 
-Attributes are declared as read-only properties because that is how
-python-docx exposes them on the real Document class. Declaring them
-as settable variables would make the real Document incompatible with
-the protocol.
+Re-exporting under the name DocxDocument gives every module in the
+package a single, unambiguous handle for the class, without the
+function-versus-class confusion.
 """
-from typing import Any, Protocol
-
-from docx.table import Table
-from docx.text.paragraph import Paragraph
+from docx.document import Document as DocxDocument
 
 
-class DocumentProtocol(Protocol):
-    """Subset of python-docx's Document used by docx-report-gen."""
-
-    @property
-    def styles(self) -> Any: ...
-
-    @property
-    def sections(self) -> Any: ...
-
-    @property
-    def core_properties(self) -> Any: ...
-
-    @property
-    def settings(self) -> Any: ...
-
-    @property
-    def paragraphs(self) -> list[Paragraph]: ...
-
-    def add_heading(self, text: str = ...,
-                    level: int = ...) -> Paragraph: ...
-
-    def add_paragraph(self, text: str = ...,
-                      style: Any = ...) -> Paragraph: ...
-
-    def add_table(self, rows: int, cols: int) -> Table: ...
-
-    def add_page_break(self) -> Paragraph: ...
-
-    def save(self, path: Any) -> None: ...
-
-
-__all__ = ['DocumentProtocol']
+__all__ = ['DocxDocument']

@@ -12,7 +12,7 @@ from ..styles import (
     resolve_formula, resolve_paragraph, resolve_quote,
 )
 from ._base import DocMixin
-from .utils import apply_layout, check_align, check_parts
+from ._utils import apply_layout, check_align, check_parts
 
 
 class ParagraphMixin(DocMixin):
@@ -107,14 +107,23 @@ class ParagraphMixin(DocMixin):
         return self
 
     def _setup_formula_tabs(self, para: Paragraph) -> None:
+        """Add center and right tab stops spanning the content width.
+
+        python-docx declares page dimensions as Optional[Length]. In a
+        document created by python-docx these are always set; the
+        asserts narrow the type without a silent fallback that would
+        hide a real misconfiguration.
+        """
         section = self.doc.sections[0]
-        content = (
-            section.page_width
-            - section.left_margin
-            - section.right_margin
-        )
+        page_width = section.page_width
+        left_margin = section.left_margin
+        right_margin = section.right_margin
+        assert page_width is not None
+        assert left_margin is not None
+        assert right_margin is not None
+        content = page_width - left_margin - right_margin
         para.paragraph_format.tab_stops.add_tab_stop(
-            content / 2, WD_TAB_ALIGNMENT.CENTER,
+            content // 2, WD_TAB_ALIGNMENT.CENTER,
         )
         para.paragraph_format.tab_stops.add_tab_stop(
             content, WD_TAB_ALIGNMENT.RIGHT,
