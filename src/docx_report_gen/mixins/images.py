@@ -41,8 +41,15 @@ class ImageMixin(BookmarkMixin, DocMixin):
         if alignment is not None:
             para.alignment = alignment
         run = para.add_run()
+
+        # Length subclasses int, so a Length instance would match the
+        # (int, float) branch below if checked first. Check Length
+        # before numbers: Length is passed through as-is (it already
+        # carries a unit), plain numbers are interpreted as centimeters.
         if ist.width is None:
             run.add_picture(str(file_path))
+        elif isinstance(ist.width, Length):
+            run.add_picture(str(file_path), width=ist.width)
         elif isinstance(ist.width, (int, float)):
             run.add_picture(str(file_path), width=Cm(ist.width))
         else:
