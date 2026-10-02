@@ -1,6 +1,8 @@
 """Code block mixin."""
+from typing import Any, Optional
+
 from .._xml import set_paragraph_shading
-from ..styles import CODE_STYLE_NAME, resolve_code
+from ..styles import CODE_STYLE_NAME, AlignLiteral, resolve_code
 from ._base import DocMixin
 from .utils import apply_layout, check_align
 
@@ -12,20 +14,26 @@ class CodeMixin(DocMixin):
     blocks can break across pages naturally.
     """
 
-    def code(self, text, language=None, align=None,
-             line_spacing=None, space_before=None, space_after=None,
-             left_indent=None):
+    def code(
+        self,
+        text: str,
+        language: Optional[str] = None,
+        align: Optional[AlignLiteral] = None,
+        line_spacing: Optional[float] = None,
+        space_before: Optional[int] = None,
+        space_after: Optional[int] = None,
+        left_indent: Optional[float] = None,
+    ) -> 'CodeMixin':
         """Insert a monospace code block.
 
         Args:
             text: the code text; newlines split it into paragraphs.
-            language: recorded for future use; Word has no built-in
-                syntax highlighting, so it does not affect rendering.
+            language: recorded for future use.
             align, line_spacing, space_before, space_after, left_indent:
                 local layout overrides.
         """
         check_align(align, where='code')
-        local = {
+        local: dict[str, Any] = {
             'align': align,
             'line_spacing': line_spacing,
             'space_before': space_before,

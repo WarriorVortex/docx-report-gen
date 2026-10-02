@@ -1,13 +1,9 @@
 """Apply DocumentMetadata to a python-docx Document."""
-from docx import Document
-
+from .._docx import DocumentProtocol
 from .document import DocumentMetadata
 
 
-# Fields copied verbatim into core_properties. Kept explicit so that
-# adding a field to DocumentMetadata is a conscious decision, not an
-# accident of attribute-name matching.
-_METADATA_FIELDS = (
+_METADATA_FIELDS: tuple[str, ...] = (
     'author',
     'title',
     'subject',
@@ -18,7 +14,8 @@ _METADATA_FIELDS = (
 )
 
 
-def apply_metadata(doc: Document, metadata: DocumentMetadata) -> None:
+def apply_metadata(doc: DocumentProtocol,
+                   metadata: DocumentMetadata) -> None:
     """Copy non-None metadata fields into the document's core properties."""
     props = doc.core_properties
     for name in _METADATA_FIELDS:
