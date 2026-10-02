@@ -2,7 +2,7 @@
 from importlib.metadata import version, PackageNotFoundError
 
 from .inline import (
-    b, i, u, s, sup, sub, color, highlight, f, link, ref,
+    b, i, u, s, sup, sub, color, highlight, f, link, ref, HighlightColor
 )
 from .metadata import DocumentMetadata
 from .report import Report
@@ -30,6 +30,7 @@ __all__ = [
     'QuoteStyle',
     'TableStyle',
     'LayoutStyle',
+    'HighlightColor',
     'b', 'i', 'u', 's', 'sup', 'sub', 'color', 'highlight',
     'f', 'link', 'ref',
 ]
