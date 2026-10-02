@@ -41,18 +41,19 @@ def set_metadata(new_metadata: DocumentMetadata) -> None:
     """Replace the current Report's DocumentMetadata.
 
     The change is written to core_properties automatically at save().
-    To inspect core_properties before saving, call sync_metadata().
+    To inspect core_properties before saving, call apply_metadata().
     """
     current().set_metadata(new_metadata)
 
 
-def sync_metadata() -> None:
+def apply_metadata() -> None:
     """Apply current metadata to core_properties immediately.
 
     save() does this automatically. Call only if you need to inspect
-    core_properties before the next save().
+    core_properties before the next save(), or to flush an in-place
+    change to writer.metadata().
     """
-    current().sync_metadata()
+    current().apply_metadata()
 
 
 def style(name: str) -> Any:

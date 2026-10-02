@@ -4,7 +4,8 @@ from typing import Optional, Any
 from docx import Document
 
 from .docx import DocxDocument
-from .metadata import DocumentMetadata, apply_metadata
+from .metadata import DocumentMetadata
+from .metadata import apply_metadata as apply_metadata_to_doc
 from .mixins import (
     BookmarkMixin, CodeMixin, HeadingMixin, ImageMixin, LayoutMixin,
     ListMixin, ParagraphMixin, PluginMixin, TableMixin, TocMixin,
@@ -32,6 +33,10 @@ class Report(HeadingMixin, ParagraphMixin, ListMixin, CodeMixin,
         # In-place config mutation, opt-in re-apply:
         r.config.heading.align = 'center'
         r.apply_styles()
+
+        # In-place metadata mutation, opt-in flush to core_properties:
+        r.metadata.author = 'X'
+        r.apply_metadata()
 
     Plugins:
         from docx_report_gen.plugins import plugins, Plugin
@@ -68,7 +73,7 @@ class Report(HeadingMixin, ParagraphMixin, ListMixin, CodeMixin,
         super().__init__()
 
         apply(self.doc, self.config)
-        apply_metadata(self.doc, self.metadata)
+        apply_metadata_to_doc(self.doc, self.metadata)
 
         # Plugins must see a fully configured document.
         self._init_plugins(plugins)
@@ -93,10 +98,6 @@ class Report(HeadingMixin, ParagraphMixin, ListMixin, CodeMixin,
 
             r.config.heading.align = 'center'
             r.apply_styles()
-
-        No-op if the document has no styles yet (never happens through
-        the public API: __init__ always creates the document before
-        any caller can reach this method).
         """
         apply(self.doc, self.config)
 
@@ -104,17 +105,18 @@ class Report(HeadingMixin, ParagraphMixin, ListMixin, CodeMixin,
         """Replace metadata. Applied to core_properties at save().
 
         To make the change visible in core_properties immediately,
-        call sync_metadata() afterwards.
+        call apply_metadata() afterwards.
         """
         self.metadata = metadata
 
-    def sync_metadata(self) -> None:
+    def apply_metadata(self) -> None:
         """Apply current metadata to core_properties now.
 
         Normally not needed: save() calls this automatically. Use it
-        only if you need to inspect core_properties before saving.
+        only if you need to inspect core_properties before saving,
+        or to flush an in-place change to self.metadata.
         """
-        apply_metadata(self.doc, self.metadata)
+        apply_metadata_to_doc(self.doc, self.metadata)
 
     # ---------- accessors ----------
 
@@ -133,6 +135,6 @@ class Report(HeadingMixin, ParagraphMixin, ListMixin, CodeMixin,
         or content before the final sync.
         """
         self._plugins_before_save(path)
-        apply_metadata(self.doc, self.metadata)
+        apply_metadata_to_doc(self.doc, self.metadata)
         self.doc.save(path)
         self._plugins_after_save(path)

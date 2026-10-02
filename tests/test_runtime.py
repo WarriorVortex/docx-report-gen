@@ -1,5 +1,5 @@
 """Tests for runtime configuration — set_config, apply_styles,
-set_metadata, sync_metadata.
+set_metadata, apply_metadata.
 
 These operations let users change styles and metadata after the
 Report has been created. They are the entry point for the writer
@@ -8,8 +8,8 @@ directly on any Report instance.
 
 The file covers both layers:
 
-    Report.set_config / apply_styles / set_metadata / sync_metadata
-    writer.set_config / apply_styles / set_metadata / sync_metadata
+    Report.set_config / apply_styles / set_metadata / apply_metadata
+    writer.set_config / apply_styles / set_metadata / apply_metadata
 
 Any test about session management or block delegation lives in
 test_writer.py, not here.
@@ -167,20 +167,20 @@ def test_report_set_metadata_overrides_constructor(docx_path):
     assert doc.core_properties.author == 'Runtime'
 
 
-# ---------- Report.sync_metadata ----------
+# ---------- Report.apply_metadata ----------
 
-def test_report_sync_metadata_writes_immediately():
+def test_report_apply_metadata_writes_immediately():
     r = Report()
     r.set_metadata(DocumentMetadata(title='Now'))
-    r.sync_metadata()
+    r.apply_metadata()
     assert r.doc.core_properties.title == 'Now'
 
 
-def test_report_sync_metadata_without_set_metadata():
-    """sync_metadata with unchanged metadata is safe and idempotent."""
+def test_report_apply_metadata_without_set_metadata():
+    """apply_metadata with unchanged metadata is safe and idempotent."""
     r = Report(metadata=DocumentMetadata(author='X'))
-    r.sync_metadata()
-    r.sync_metadata()
+    r.apply_metadata()
+    r.apply_metadata()
     assert r.doc.core_properties.author == 'X'
 
 
@@ -240,10 +240,10 @@ def test_writer_set_metadata(docx_path):
     assert doc.core_properties.author == 'Writer Author'
 
 
-def test_writer_sync_metadata():
+def test_writer_apply_metadata():
     writer.h1('X')
     writer.set_metadata(DocumentMetadata(title='Immediate'))
-    writer.sync_metadata()
+    writer.apply_metadata()
     assert writer.current().doc.core_properties.title == 'Immediate'
 
 

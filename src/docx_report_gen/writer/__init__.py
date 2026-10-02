@@ -31,7 +31,7 @@ Runtime configuration:
     set_config(StylesConfig(font='Arial'))
     set_metadata(DocumentMetadata(author='X'))
     apply_styles()
-    sync_metadata()
+    apply_metadata()
 
 Block-level functions return None. For chained calls, use the Report
 object API directly.
@@ -58,8 +58,8 @@ from ._blocks import (
 )
 from ._code import code
 from ._config import (
-    apply_styles, config, metadata, set_config, set_metadata,
-    style, sync_metadata,
+    apply_metadata, apply_styles, config, metadata,
+    set_config, set_metadata, style,
 )
 from ._formula import f
 from ._plugins import (
@@ -77,7 +77,7 @@ __all__ = [
     'current', 'has_session',
     # config / metadata
     'config', 'set_config', 'apply_styles',
-    'metadata', 'set_metadata', 'sync_metadata',
+    'metadata', 'set_metadata', 'apply_metadata',
     'style',
     # plugins
     'register_plugin', 'unregister_plugin',
