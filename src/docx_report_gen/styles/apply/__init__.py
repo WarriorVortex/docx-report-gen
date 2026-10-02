@@ -1,6 +1,6 @@
 """Apply StylesConfig to a python-docx Document."""
 from ..config import StylesConfig
-from ..._docx import DocxDocument
+from ...docx import DocxDocument
 from .captions import apply_captions
 from .code import apply_code
 from .headings import apply_headings

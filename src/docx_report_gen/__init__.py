@@ -1,8 +1,9 @@
 """docx-report-gen — a minimal wrapper for generating docx reports."""
 from importlib.metadata import version, PackageNotFoundError
 
+from . import docx
 from .inline import (
-    b, i, u, s, sup, sub, color, highlight, f, link, ref, HighlightColor
+    b, i, u, s, sup, sub, color, highlight, f, link, ref,
 )
 from .metadata import DocumentMetadata
 from .report import Report
@@ -30,7 +31,7 @@ __all__ = [
     'QuoteStyle',
     'TableStyle',
     'LayoutStyle',
-    'HighlightColor',
     'b', 'i', 'u', 's', 'sup', 'sub', 'color', 'highlight',
     'f', 'link', 'ref',
+    'docx',
 ]

@@ -1,7 +1,7 @@
 """Apply list styles."""
 from docx.shared import Cm
 
-from ..._docx import DocxDocument
+from ...docx import DocxDocument
 from ..config import StylesConfig
 from ..constants import LIST_BULLET_STYLES, LIST_NUMBER_STYLES
 from ..resolvers import resolve_list

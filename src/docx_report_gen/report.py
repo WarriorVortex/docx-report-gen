@@ -3,7 +3,7 @@ from typing import Any, Optional
 
 from docx import Document
 
-from ._docx import DocxDocument
+from .docx import DocxDocument
 from .metadata import DocumentMetadata, apply_metadata
 from .mixins import (
     BookmarkMixin, CodeMixin, HeadingMixin, ImageMixin, LayoutMixin,

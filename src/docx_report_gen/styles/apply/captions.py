@@ -1,5 +1,5 @@
 """Apply caption styles (tables, images)."""
-from ..._docx import DocxDocument
+from ...docx import DocxDocument
 from ..config import StylesConfig
 from ..constants import CAPTION_STYLE_NAME, IMAGE_CAPTION_STYLE_NAME
 from ..resolvers import resolve_caption, resolve_image_caption

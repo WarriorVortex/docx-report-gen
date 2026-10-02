@@ -3,7 +3,7 @@
 DocMixin declares the minimum contract that every mixin relies on:
 `doc` and `config`. All values are assigned in Report.__init__.
 """
-from .._docx import DocxDocument
+from ..docx import DocxDocument
 from ..styles import StylesConfig
 
 

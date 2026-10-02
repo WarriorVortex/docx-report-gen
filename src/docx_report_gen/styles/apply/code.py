@@ -1,5 +1,5 @@
 """Apply code block style."""
-from ..._docx import DocxDocument
+from ...docx import DocxDocument
 from ..config import StylesConfig
 from ..constants import CODE_STYLE_NAME
 from ..resolvers import resolve_code

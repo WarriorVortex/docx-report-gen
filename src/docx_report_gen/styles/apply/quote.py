@@ -1,7 +1,7 @@
 """Apply block quote style."""
 from docx.shared import Cm
 
-from ..._docx import DocxDocument
+from ...docx import DocxDocument
 from ..config import StylesConfig
 from ..constants import QUOTE_STYLE_NAME
 from ..resolvers import resolve_quote

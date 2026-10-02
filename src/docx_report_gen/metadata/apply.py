@@ -1,5 +1,5 @@
 """Apply DocumentMetadata to a python-docx Document."""
-from .._docx import DocxDocument
+from ..docx import DocxDocument
 from .document import DocumentMetadata
 
 

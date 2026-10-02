@@ -1,5 +1,5 @@
 """Apply the Title (level 0) style."""
-from ..._docx import DocxDocument
+from ...docx import DocxDocument
 from ..config import StylesConfig
 from ..resolvers import resolve_title
 from ..utils import apply_font, get_paragraph_style

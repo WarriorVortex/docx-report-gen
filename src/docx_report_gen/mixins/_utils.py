@@ -4,7 +4,7 @@ from typing import Any, Optional, Sequence, Union
 from docx.shared import Pt, Cm
 from docx.text.paragraph import Paragraph
 
-from .._docx import DocxDocument
+from ..docx import DocxDocument
 from .._utils import (
     add_bookmark_end, add_bookmark_start, add_seq_field,
 )

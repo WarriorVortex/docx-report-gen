@@ -28,7 +28,7 @@ from docx.oxml.ns import qn
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
 from docx.text.paragraph import Paragraph
 
-from ._docx import DocxDocument
+from .docx import DocxDocument
 
 
 def add_page_break(doc: DocxDocument) -> None:

@@ -1,7 +1,7 @@
 """Apply the base ('Normal') paragraph style."""
 from docx.shared import Pt, RGBColor
 
-from ..._docx import DocxDocument
+from ...docx import DocxDocument
 from ..config import StylesConfig
 from ..utils import get_paragraph_style
 

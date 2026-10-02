@@ -1,7 +1,7 @@
 """Apply page-level settings (margins)."""
 from docx.shared import Cm
 
-from ..._docx import DocxDocument
+from ...docx import DocxDocument
 from ..config import StylesConfig
 
 

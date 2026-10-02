@@ -1,5 +1,5 @@
 """Apply Heading 1..N styles."""
-from ..._docx import DocxDocument
+from ...docx import DocxDocument
 from ..config import StylesConfig
 from ..resolvers import resolve_heading
 from ..utils import apply_font, get_paragraph_style

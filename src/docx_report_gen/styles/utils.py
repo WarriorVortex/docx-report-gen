@@ -6,7 +6,7 @@ from docx.enum.style import WD_STYLE_TYPE
 from docx.shared import Pt, RGBColor
 from docx.styles.style import ParagraphStyle
 
-from .._docx import DocxDocument
+from ..docx import DocxDocument
 from .constants import ALIGN
 
 
