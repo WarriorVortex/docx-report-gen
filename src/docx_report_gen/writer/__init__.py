@@ -10,9 +10,15 @@ Example:
     title('Отчёт')
     h1('Введение')
     p('Формула: ', f('E = mc^2'))
-    p('Жирным: ', b('важно'))
     table([['A', 'B'], [1, 2]], caption='Данные')
     save('out.docx')
+
+Runtime configuration:
+
+    set_config(StylesConfig(font='Arial'))   # replaces and re-applies
+    set_metadata(DocumentMetadata(author='X'))
+    apply_styles()                            # after in-place config edit
+    sync_metadata()                           # flush metadata to core props
 
 The public surface is assembled from four submodules:
 
@@ -22,11 +28,7 @@ The public surface is assembled from four submodules:
     _blocks    block-level delegations (h1..h6, p, table, ...)
 
 Block-level functions return None. For chained calls, use the Report
-object API directly:
-
-    from docx_report_gen import Report
-
-    Report().h1('X').p('Y').save('out.docx')
+object API directly.
 """
 from typing import Any
 
@@ -35,7 +37,7 @@ from typing import Any
 # re-export chains poorly when a package also defines a module-level
 # __getattr__ (which this file does). Importing from .nodes gives
 # the IDE a concrete module with concrete `def` statements to bind.
-from ..inline import (
+from ..inline.nodes import (
     b, i, u, s, sup, sub, color, highlight, f, link, ref,
 )
 from ._blocks import (
@@ -48,7 +50,8 @@ from ._blocks import (
     formula, save,
 )
 from ._config import (
-    config, metadata, set_config, set_metadata, style,
+    apply_styles, config, metadata, set_config, set_metadata,
+    style, sync_metadata,
 )
 from ._plugins import (
     block, inline_node, plugins,
@@ -64,7 +67,9 @@ __all__ = [
     'new', 'configure', 'reset', 'attach', 'detach',
     'current', 'has_session',
     # config / metadata
-    'config', 'set_config', 'metadata', 'set_metadata', 'style',
+    'config', 'set_config', 'apply_styles',
+    'metadata', 'set_metadata', 'sync_metadata',
+    'style',
     # plugins
     'register_plugin', 'unregister_plugin',
     'plugins', 'block', 'inline_node',
@@ -94,10 +99,6 @@ def __getattr__(name: str) -> Any:
         import docx_report_gen.writer as writer
         writer.centered('X')       # plugin block method
         writer.boxed('text')       # plugin inline factory
-
-    `from ... import *` does not pull in plugin methods — they are
-    dynamic and cannot be listed in __all__. Use the module-qualified
-    form, or reach the Report directly via current().
     """
     if name.startswith('_'):
         raise AttributeError(name)

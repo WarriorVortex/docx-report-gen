@@ -1,9 +1,8 @@
 """Accessors for config, metadata and python-docx styles."""
 from typing import Any
 
-from ..styles import StylesConfig
-
 from ..metadata import DocumentMetadata
+from ..styles import StylesConfig
 from ._state import current
 
 
@@ -13,13 +12,24 @@ def config() -> StylesConfig:
 
 
 def set_config(new_config: StylesConfig) -> None:
-    """Replace the current Report's StylesConfig.
+    """Replace the current Report's StylesConfig and re-apply styles.
 
-    Does not re-apply styles to the document — affects only future
-    style resolution. To restyle retroactively, mutate the desired
-    style directly via `style(name)`.
+    Underlying Word styles (Normal, Heading 1, ReportCode, ...) are
+    re-derived from the new config. Paragraph-level overrides made by
+    individual calls — e.g. h1('X', align='center') — are preserved.
     """
-    current().config = new_config
+    current().set_config(new_config)
+
+
+def apply_styles() -> None:
+    """Re-apply the current config to document styles.
+
+    Use after mutating config in place:
+
+        writer.config().heading.align = 'center'
+        writer.apply_styles()
+    """
+    current().apply_styles()
 
 
 def metadata() -> DocumentMetadata:
@@ -30,10 +40,19 @@ def metadata() -> DocumentMetadata:
 def set_metadata(new_metadata: DocumentMetadata) -> None:
     """Replace the current Report's DocumentMetadata.
 
-    The change is written to core properties on save() only if you
-    also run apply_metadata explicitly. See metadata.apply for details.
+    The change is written to core_properties automatically at save().
+    To inspect core_properties before saving, call sync_metadata().
     """
-    current().metadata = new_metadata
+    current().set_metadata(new_metadata)
+
+
+def sync_metadata() -> None:
+    """Apply current metadata to core_properties immediately.
+
+    save() does this automatically. Call only if you need to inspect
+    core_properties before the next save().
+    """
+    current().sync_metadata()
 
 
 def style(name: str) -> Any:
