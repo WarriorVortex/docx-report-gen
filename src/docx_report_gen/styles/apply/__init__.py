@@ -1,6 +1,6 @@
 """Apply StylesConfig to a python-docx Document."""
 from ..config import StylesConfig
-from ..._docx import DocumentProtocol
+from ...docx import DocxDocument
 from .captions import apply_captions
 from .code import apply_code
 from .headings import apply_headings
@@ -11,7 +11,7 @@ from .quote import apply_quote
 from .title import apply_title
 
 
-def apply(doc: DocumentProtocol, config: StylesConfig) -> None:
+def apply(doc: DocxDocument, config: StylesConfig) -> None:
     """Apply a StylesConfig to every relevant style of the document."""
     apply_normal(doc, config)
     apply_title(doc, config)

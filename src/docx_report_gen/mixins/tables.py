@@ -4,14 +4,14 @@ from typing import Any, Optional, Sequence, Union
 from docx.shared import Cm
 from docx.table import Table
 
-from .._xml import clear_cell_content
+from .._utils import clear_cell_content
 from ..styles import (
     ALIGN, CAPTION_STYLE_NAME, SEQ_TABLE, AlignLiteral,
     resolve_caption, resolve_table,
 )
 from ._base import DocMixin
 from .bookmarks import BookmarkMixin
-from .utils import check_align, render_caption
+from ._utils import check_align, render_caption
 
 
 class TableMixin(BookmarkMixin, DocMixin):

@@ -2,6 +2,8 @@
 from dataclasses import dataclass
 from typing import Optional
 
+from .types import AlignLiteral
+
 
 @dataclass
 class TableStyle:
@@ -14,7 +16,7 @@ class TableStyle:
     `header_align` — alignment for the header row; overrides per-column
     settings when the header row is rendered.
     """
-    align: Optional[str] = None
+    align: Optional[AlignLiteral] = None
     col_widths: Optional[tuple[float, ...]] = None
-    col_aligns: Optional[tuple[str, ...]] = None
-    header_align: Optional[str] = None
+    col_aligns: Optional[tuple[AlignLiteral, ...]] = None
+    header_align: Optional[AlignLiteral] = None

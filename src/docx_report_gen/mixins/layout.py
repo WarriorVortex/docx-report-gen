@@ -1,56 +1,64 @@
 """Layout methods mixin."""
-from .._xml import add_page_number, set_paragraph_bottom_border
-from ..styles import ALIGN
+from typing import Optional
+
+from .._utils import (
+    add_page_break, add_page_number, set_paragraph_bottom_border,
+)
+from ..styles import ALIGN, AlignLiteral
 from ._base import DocMixin
 
 
 class LayoutMixin(DocMixin):
-    """Adds page_break(), hr(), header(), footer(), page_numbers()
-    to Report."""
+    """Adds page_break(), hr(), header(), footer(), page_numbers()."""
 
-    def page_break(self):
+    def page_break(self) -> 'LayoutMixin':
         """Insert a page break."""
-        self.doc.add_page_break()
+        add_page_break(self.doc)
         return self
 
-    def hr(self):
-        """Insert a horizontal rule (bottom-bordered empty paragraph)."""
+    def hr(self) -> 'LayoutMixin':
+        """Insert a horizontal rule."""
         para = self.doc.add_paragraph()
         set_paragraph_bottom_border(para)
         return self
 
-    def header(self, text, align='center'):
+    def header(self, text: str,
+               align: AlignLiteral = 'center') -> 'LayoutMixin':
         """Set header text for all sections."""
         for section in self.doc.sections:
             section.header.is_linked_to_previous = False
             para = section.header.paragraphs[0]
             para.text = ''
-            para.alignment = ALIGN[align]
+            alignment = ALIGN[align]
+            if alignment is not None:
+                para.alignment = alignment
             para.add_run(text)
         return self
 
-    def footer(self, text=None, align='center'):
-        """Set footer text (page number is added separately)."""
+    def footer(self, text: Optional[str] = None,
+               align: AlignLiteral = 'center') -> 'LayoutMixin':
+        """Set footer text."""
         for section in self.doc.sections:
             section.footer.is_linked_to_previous = False
             para = section.footer.paragraphs[0]
             para.text = ''
-            para.alignment = ALIGN[align]
+            alignment = ALIGN[align]
+            if alignment is not None:
+                para.alignment = alignment
             if text:
                 para.add_run(text)
         return self
 
-    def page_numbers(self, align='center', skip_first=True):
-        """Insert page numbers into the footer.
-
-        `skip_first=True` suppresses header and footer on the first
-        page — useful for title pages.
-        """
+    def page_numbers(self, align: AlignLiteral = 'center',
+                     skip_first: bool = True) -> 'LayoutMixin':
+        """Insert page numbers into the footer."""
         for section in self.doc.sections:
             if skip_first:
                 section.different_first_page_header_footer = True
             section.footer.is_linked_to_previous = False
             para = section.footer.paragraphs[0]
-            para.alignment = ALIGN[align]
+            alignment = ALIGN[align]
+            if alignment is not None:
+                para.alignment = alignment
             add_page_number(para)
         return self

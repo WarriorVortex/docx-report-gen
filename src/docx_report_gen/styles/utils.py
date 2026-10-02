@@ -6,7 +6,7 @@ from docx.enum.style import WD_STYLE_TYPE
 from docx.shared import Pt, RGBColor
 from docx.styles.style import ParagraphStyle
 
-from .._docx import DocumentProtocol
+from ..docx import DocxDocument
 from .constants import ALIGN
 
 
@@ -53,7 +53,7 @@ def resolve(cls: Type[T], *sources: Any) -> T:
     return cls(**resolved)
 
 
-def get_paragraph_style(doc: DocumentProtocol,
+def get_paragraph_style(doc: DocxDocument,
                         name: str) -> ParagraphStyle:
     """Return a style by name, typed as ParagraphStyle.
 
@@ -63,7 +63,7 @@ def get_paragraph_style(doc: DocumentProtocol,
     return cast(ParagraphStyle, doc.styles[name])
 
 
-def find_paragraph_style(doc: DocumentProtocol,
+def find_paragraph_style(doc: DocxDocument,
                          name: str) -> Optional[ParagraphStyle]:
     """Return a paragraph style by name, or None if not present."""
     try:
@@ -72,7 +72,7 @@ def find_paragraph_style(doc: DocumentProtocol,
         return None
 
 
-def ensure_style(doc: DocumentProtocol, name: str) -> ParagraphStyle:
+def ensure_style(doc: DocxDocument, name: str) -> ParagraphStyle:
     """Return an existing paragraph style or create a new one."""
     try:
         return cast(ParagraphStyle, doc.styles[name])

@@ -1,10 +1,10 @@
 """Code block mixin."""
 from typing import Any, Optional
 
-from .._xml import set_paragraph_shading
+from .._utils import set_paragraph_shading
 from ..styles import CODE_STYLE_NAME, AlignLiteral, resolve_code
 from ._base import DocMixin
-from .utils import apply_layout, check_align
+from ._utils import apply_layout, check_align
 
 
 class CodeMixin(DocMixin):

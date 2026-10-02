@@ -6,21 +6,36 @@ from docx.enum.text import WD_COLOR_INDEX
 from docx.shared import RGBColor
 from docx.text.paragraph import Paragraph
 
-from .._xml import add_hyperlink, add_ref_field
+from .._utils import add_hyperlink, add_ref_field
 from ..styles.config.types import RGB
 
 
-HighlightColor = Union[str, WD_COLOR_INDEX]
-"""Either a named highlight color or a WD_COLOR_INDEX enum member."""
+# Public alias: users may pass either a WML color name (str) or a
+# WD_COLOR_INDEX member to highlight(). Alias re-exported from
+# docx_report_gen.inline for convenience.
+HighlightColor = WD_COLOR_INDEX
 
 
-_HIGHLIGHT_COLORS: dict[str, WD_COLOR_INDEX] = {
-    'yellow': WD_COLOR_INDEX.YELLOW,
-    'green': WD_COLOR_INDEX.GREEN,
-    'blue': WD_COLOR_INDEX.BLUE,
-    'red': WD_COLOR_INDEX.RED,
-    'gray': WD_COLOR_INDEX.GRAY_25,
-}
+def _build_highlight_colors() -> dict[str, WD_COLOR_INDEX]:
+    """Map WML string names to WD_COLOR_INDEX members.
+
+    Reads `xml_value` of each member, so the mapping stays in sync with
+    python-docx's enum without manual maintenance. Members without an
+    xml_value (INHERITED) are skipped.
+
+    Valid names include: 'default', 'black', 'white', 'blue', 'darkBlue',
+    'red', 'darkRed', 'yellow', 'darkYellow', 'green', 'darkGreen',
+    'cyan', 'darkCyan', 'magenta', 'darkMagenta', 'lightGray', 'darkGray'.
+    """
+    result: dict[str, WD_COLOR_INDEX] = {}
+    for member in WD_COLOR_INDEX:
+        xml = member.xml_value
+        if xml:
+            result[xml] = member
+    return result
+
+
+_HIGHLIGHT_COLORS: dict[str, WD_COLOR_INDEX] = _build_highlight_colors()
 
 
 class Inline:
@@ -89,12 +104,14 @@ class Color(Inline):
 
 
 class Highlight(Inline):
-    def __init__(self,
-                 text: str,
-                 color: HighlightColor = 'yellow') -> None:
+    def __init__(
+        self,
+        text: str,
+        color: Union[str, HighlightColor] = 'yellow',
+    ) -> None:
         self.text: str = text
         if isinstance(color, str):
-            key = color.lower()
+            key = color  # WML names are case-sensitive: 'lightGray', 'darkGreen', etc.
             if key not in _HIGHLIGHT_COLORS:
                 raise ValueError(
                     f"unknown highlight color {color!r}; "
@@ -181,8 +198,15 @@ def color(text: str, rgb: RGB) -> Inline:
     return Color(text, rgb)
 
 
-def highlight(text: str, color: HighlightColor = 'yellow') -> Inline:
-    """Highlighted inline node."""
+def highlight(
+    text: str,
+    color: Union[str, HighlightColor] = 'yellow',
+) -> Inline:
+    """Highlighted inline node.
+
+    `color` is either a WML color name (e.g. 'yellow', 'cyan', 'magenta',
+    'lightGray', 'darkGreen') or a WD_COLOR_INDEX member.
+    """
     return Highlight(text, color)
 
 

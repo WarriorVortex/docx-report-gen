@@ -1,39 +1,31 @@
 """Image mixin with optional captions."""
 from pathlib import Path
+from typing import Optional, Union
 
-from docx.shared import Cm
+from docx.shared import Cm, Length
 
 from ..styles import (
-    ALIGN, IMAGE_CAPTION_STYLE_NAME, SEQ_FIGURE,
-    resolve_image, resolve_image_caption,
+    ALIGN, IMAGE_CAPTION_STYLE_NAME, SEQ_FIGURE, AlignLiteral,
+    PathLike, resolve_image, resolve_image_caption,
 )
 from ._base import DocMixin
 from .bookmarks import BookmarkMixin
-from .utils import check_align, render_caption
+from ._utils import check_align, render_caption
 
 
 class ImageMixin(BookmarkMixin, DocMixin):
-    """Adds img() to Report.
+    """Adds img() to Report."""
 
-    Captioned images are numbered by a Word SEQ field — one counter
-    for all images in the document, independent from the table counter.
-    """
-
-    def img(self, path, caption=None, caption_align=None, name=None,
-            width=None, align=None):
-        """Insert an image, optionally followed by a numbered caption.
-
-        Args:
-            path: path to the image file.
-            caption: caption text; None disables the caption.
-            caption_align: local alignment override for the caption.
-            name: optional bookmark name for cross-referencing via
-                Report.ref(name). Must not contain whitespace.
-            width: image width in cm (or a docx.shared.Length object).
-                None falls back to StylesConfig.image.width or native size.
-            align: alignment of the image paragraph; None falls back to
-                StylesConfig.image.align or the global StylesConfig.align.
-        """
+    def img(
+        self,
+        path: PathLike,
+        caption: Optional[str] = None,
+        caption_align: Optional[AlignLiteral] = None,
+        name: Optional[str] = None,
+        width: Optional[Union[float, Length]] = None,
+        align: Optional[AlignLiteral] = None,
+    ) -> 'ImageMixin':
+        """Insert an image, optionally followed by a numbered caption."""
         file_path = Path(path)
         if not file_path.exists():
             raise FileNotFoundError(
@@ -45,15 +37,23 @@ class ImageMixin(BookmarkMixin, DocMixin):
         ist = resolve_image(self.config, {'align': align, 'width': width})
 
         para = self.doc.add_paragraph()
-        para.alignment = ALIGN[ist.align]
+        alignment = ALIGN[ist.align]
+        if alignment is not None:
+            para.alignment = alignment
         run = para.add_run()
-        kwargs = {}
-        if ist.width is not None:
-            kwargs['width'] = (
-                Cm(ist.width) if isinstance(ist.width, (int, float))
-                else ist.width
-            )
-        run.add_picture(str(file_path), **kwargs)
+
+        # Length subclasses int, so a Length instance would match the
+        # (int, float) branch below if checked first. Check Length
+        # before numbers: Length is passed through as-is (it already
+        # carries a unit), plain numbers are interpreted as centimeters.
+        if ist.width is None:
+            run.add_picture(str(file_path))
+        elif isinstance(ist.width, Length):
+            run.add_picture(str(file_path), width=ist.width)
+        elif isinstance(ist.width, (int, float)):
+            run.add_picture(str(file_path), width=Cm(ist.width))
+        else:
+            run.add_picture(str(file_path), width=ist.width)
 
         if caption is not None:
             para.paragraph_format.keep_with_next = True
