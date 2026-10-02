@@ -1,19 +1,20 @@
 """Shared utilities for Report mixins."""
-from docx import Document
+from typing import Any, Optional, Sequence, Union
+
 from docx.shared import Pt, Cm
 from docx.text.paragraph import Paragraph
 
+from .._docx import DocumentProtocol
 from .._xml import (
     add_bookmark_end, add_bookmark_start, add_seq_field,
 )
-from ..styles import ALIGN
+from ..inline import Inline
+from ..styles import ALIGN, AlignLiteral, CaptionStyle
 
 
-def check_align(value, where='method'):
-    """Raise ValueError if `value` is not a valid alignment name.
-
-    None is allowed and means 'use the resolved subconfig value'.
-    """
+def check_align(value: Optional[AlignLiteral],
+                where: str = 'method') -> None:
+    """Raise ValueError if `value` is not a valid alignment name."""
     if value is None:
         return
     if value not in ALIGN:
@@ -24,9 +25,9 @@ def check_align(value, where='method'):
         )
 
 
-def check_parts(parts, where='p'):
+def check_parts(parts: Sequence[Union[str, Inline]],
+                where: str = 'p') -> None:
     """Raise TypeError on the first part that is not str or Inline."""
-    from ..inline import Inline
     for part in parts:
         if not isinstance(part, (str, Inline)):
             raise TypeError(
@@ -36,16 +37,13 @@ def check_parts(parts, where='p'):
             )
 
 
-def apply_layout(para: Paragraph, resolved) -> None:
-    """Apply resolved layout properties to a paragraph.
-
-    Accepts any style object that exposes `align`, `line_spacing`,
-    `space_before`, `space_after`, `first_line_indent`, `left_indent`.
-    Missing attributes and None values are skipped silently.
-    """
+def apply_layout(para: Paragraph, resolved: Any) -> None:
+    """Apply resolved layout properties to a paragraph."""
     align = getattr(resolved, 'align', None)
     if align is not None:
-        para.alignment = ALIGN[align]
+        align_value = ALIGN[align]
+        if align_value is not None:
+            para.alignment = align_value
 
     pf = para.paragraph_format
 
@@ -70,31 +68,16 @@ def apply_layout(para: Paragraph, resolved) -> None:
         pf.left_indent = Cm(left_indent)
 
 
-def render_caption(doc: Document, caption_style, style_name: str,
-                   caption: str, seq_name: str,
-                   bookmark_name: str | None = None,
-                   bookmark_id: int | None = None) -> Paragraph:
-    """Render a numbered caption using a Word SEQ field.
-
-    The template is split at the single `{n}` placeholder. The text
-    before it becomes a leading run, the placeholder becomes a SEQ
-    field (optionally wrapped in a bookmark for cross-referencing),
-    and the text after becomes a trailing run.
-
-    If the template has no `{n}`, no SEQ field is emitted — the
-    caption is treated as a plain label.
-
-    Args:
-        doc: target document.
-        caption_style: a resolved CaptionStyle (prefix, template, align).
-        style_name: paragraph style name to apply.
-        caption: caption text, substituted for `{caption}`.
-        seq_name: SEQ counter name, e.g. 'Table' or 'Figure'.
-        bookmark_name: full bookmark name (with prefix) to wrap the
-            SEQ field, or None for no bookmark.
-        bookmark_id: unique bookmark id, required when bookmark_name
-            is given.
-    """
+def render_caption(
+    doc: DocumentProtocol,
+    caption_style: CaptionStyle,
+    style_name: str,
+    caption: str,
+    seq_name: str,
+    bookmark_name: Optional[str] = None,
+    bookmark_id: Optional[int] = None,
+) -> Paragraph:
+    """Render a numbered caption using a Word SEQ field."""
     template = caption_style.template
 
     if template.count('{n}') > 1:
@@ -122,12 +105,16 @@ def render_caption(doc: Document, caption_style, style_name: str,
     if before:
         para.add_run(before)
     if has_seq:
-        if bookmark_name is not None:
+        if bookmark_name is not None and bookmark_id is not None:
             add_bookmark_start(para, bookmark_name, bookmark_id)
-        add_seq_field(para, seq_name)
-        if bookmark_name is not None:
+            add_seq_field(para, seq_name)
             add_bookmark_end(para, bookmark_id)
+        else:
+            add_seq_field(para, seq_name)
     if after:
         para.add_run(after)
-    para.alignment = ALIGN[caption_style.align]
+
+    align_value = ALIGN[caption_style.align]
+    if align_value is not None:
+        para.alignment = align_value
     return para

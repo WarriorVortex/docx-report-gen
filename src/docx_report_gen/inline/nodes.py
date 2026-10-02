@@ -7,15 +7,16 @@ from docx.shared import RGBColor
 from docx.text.paragraph import Paragraph
 
 from .._xml import add_hyperlink, add_ref_field
+from ..styles.config.types import RGB
 
 
-RGB = tuple[int, int, int]
+HighlightColor = Union[str, WD_COLOR_INDEX]
+"""Either a named highlight color or a WD_COLOR_INDEX enum member."""
 
-_HIGHLIGHT_COLORS = {
+
+_HIGHLIGHT_COLORS: dict[str, WD_COLOR_INDEX] = {
     'yellow': WD_COLOR_INDEX.YELLOW,
     'green': WD_COLOR_INDEX.GREEN,
-    'cyan': WD_COLOR_INDEX.CYAN,
-    'magenta': WD_COLOR_INDEX.MAGENTA,
     'blue': WD_COLOR_INDEX.BLUE,
     'red': WD_COLOR_INDEX.RED,
     'gray': WD_COLOR_INDEX.GRAY_25,
@@ -31,7 +32,7 @@ class Inline:
 
 class Bold(Inline):
     def __init__(self, text: str) -> None:
-        self.text = text
+        self.text: str = text
 
     def render(self, para: Paragraph) -> None:
         para.add_run(self.text).bold = True
@@ -39,7 +40,7 @@ class Bold(Inline):
 
 class Italic(Inline):
     def __init__(self, text: str) -> None:
-        self.text = text
+        self.text: str = text
 
     def render(self, para: Paragraph) -> None:
         para.add_run(self.text).italic = True
@@ -47,7 +48,7 @@ class Italic(Inline):
 
 class Underline(Inline):
     def __init__(self, text: str) -> None:
-        self.text = text
+        self.text: str = text
 
     def render(self, para: Paragraph) -> None:
         para.add_run(self.text).underline = True
@@ -55,7 +56,7 @@ class Underline(Inline):
 
 class Strike(Inline):
     def __init__(self, text: str) -> None:
-        self.text = text
+        self.text: str = text
 
     def render(self, para: Paragraph) -> None:
         para.add_run(self.text).font.strike = True
@@ -63,7 +64,7 @@ class Strike(Inline):
 
 class Sup(Inline):
     def __init__(self, text: str) -> None:
-        self.text = text
+        self.text: str = text
 
     def render(self, para: Paragraph) -> None:
         para.add_run(self.text).font.superscript = True
@@ -71,7 +72,7 @@ class Sup(Inline):
 
 class Sub(Inline):
     def __init__(self, text: str) -> None:
-        self.text = text
+        self.text: str = text
 
     def render(self, para: Paragraph) -> None:
         para.add_run(self.text).font.subscript = True
@@ -79,8 +80,8 @@ class Sub(Inline):
 
 class Color(Inline):
     def __init__(self, text: str, rgb: RGB) -> None:
-        self.text = text
-        self.rgb = rgb
+        self.text: str = text
+        self.rgb: RGB = rgb
 
     def render(self, para: Paragraph) -> None:
         run = para.add_run(self.text)
@@ -88,9 +89,10 @@ class Color(Inline):
 
 
 class Highlight(Inline):
-    def __init__(self, text: str,
-                 color: Union[str, WD_COLOR_INDEX] = 'yellow') -> None:
-        self.text = text
+    def __init__(self,
+                 text: str,
+                 color: HighlightColor = 'yellow') -> None:
+        self.text: str = text
         if isinstance(color, str):
             key = color.lower()
             if key not in _HIGHLIGHT_COLORS:
@@ -99,7 +101,7 @@ class Highlight(Inline):
                     f"expected one of {sorted(_HIGHLIGHT_COLORS)} "
                     f"or a WD_COLOR_INDEX member"
                 )
-            self.color = _HIGHLIGHT_COLORS[key]
+            self.color: WD_COLOR_INDEX = _HIGHLIGHT_COLORS[key]
         else:
             self.color = color
 
@@ -110,7 +112,7 @@ class Highlight(Inline):
 
 class Formula(Inline):
     def __init__(self, latex: str) -> None:
-        self.latex = latex
+        self.latex: str = latex
 
     def render(self, para: Paragraph) -> None:
         math2docx.add_math(para, self.latex)
@@ -118,20 +120,15 @@ class Formula(Inline):
 
 class Link(Inline):
     def __init__(self, text: str, url: str) -> None:
-        self.text = text
-        self.url = url
+        self.text: str = text
+        self.url: str = url
 
     def render(self, para: Paragraph) -> None:
         add_hyperlink(para, self.text, self.url)
 
 
 class Reference(Inline):
-    """Cross-reference to a bookmarked element.
-
-    Renders a Word REF field. Word resolves it to the current value of
-    the target's SEQ counter, so the displayed number follows any
-    renumbering after edits.
-    """
+    """Cross-reference to a bookmarked element."""
 
     def __init__(self, name: str) -> None:
         if not isinstance(name, str) or not name.strip():
@@ -140,7 +137,7 @@ class Reference(Inline):
             raise ValueError(
                 f'ref() name must not contain whitespace: {name!r}'
             )
-        self.name = name
+        self.name: str = name
 
     def render(self, para: Paragraph) -> None:
         from ..styles import BOOKMARK_PREFIX
@@ -184,8 +181,7 @@ def color(text: str, rgb: RGB) -> Inline:
     return Color(text, rgb)
 
 
-def highlight(text: str,
-              color: Union[str, WD_COLOR_INDEX] = 'yellow') -> Inline:
+def highlight(text: str, color: HighlightColor = 'yellow') -> Inline:
     """Highlighted inline node."""
     return Highlight(text, color)
 

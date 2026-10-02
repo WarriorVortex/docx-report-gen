@@ -1,41 +1,50 @@
 """Report class — assembles all mixins into a single builder."""
+from typing import Optional
+
 from docx import Document
 
+from ._docx import DocumentProtocol
 from .metadata import DocumentMetadata, apply_metadata
 from .mixins import (
     BookmarkMixin, CodeMixin, HeadingMixin, ImageMixin, LayoutMixin,
-    ListMixin, ParagraphMixin, TableMixin, TocMixin,
+    ListMixin, ParagraphMixin, PluginMixin, TableMixin, TocMixin,
 )
 from .styles import StylesConfig, apply
 
 
 class Report(HeadingMixin, ParagraphMixin, ListMixin, CodeMixin,
               TableMixin, ImageMixin, BookmarkMixin, TocMixin,
-              LayoutMixin):
-    """Declarative docx report builder.
+              LayoutMixin, PluginMixin):
+    """Declarative docx report builder."""
 
-    Example:
-        from docx_report_gen import Report, ref
+    doc: DocumentProtocol
 
-        r = Report()
-        r.p('See table ', ref('results'), ' below.')
-        r.table([[1, 2]], caption='Measurements', name='results')
-        r.save('report.docx')
-    """
-
-    def __init__(self,
-                 config: StylesConfig | None = None,
-                 metadata: DocumentMetadata | None = None):
+    def __init__(
+        self,
+        config: Optional[StylesConfig] = None,
+        metadata: Optional[DocumentMetadata] = None,
+        plugins: Optional[list] = None,
+    ) -> None:
         self.config = config or StylesConfig()
         self.metadata = metadata or DocumentMetadata()
         self.doc = Document()
-        self._init_bookmarks()
+
+        # Cooperative init: stateful mixins set their private state
+        # here. The MRO chain runs each __init__ exactly once.
+        super().__init__()
+
         apply(self.doc, self.config)
         apply_metadata(self.doc, self.metadata)
+
+        # Plugins must see a fully configured document.
+        self._init_plugins(plugins)
 
     def style(self, name: str):
         """Direct access to a python-docx style object."""
         return self.doc.styles[name]
 
-    def save(self, path: str):
+    def save(self, path: str) -> None:
+        """Write the document, running plugin save hooks around it."""
+        self._plugins_before_save(path)
         self.doc.save(path)
+        self._plugins_after_save(path)

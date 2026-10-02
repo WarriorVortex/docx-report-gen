@@ -1,4 +1,11 @@
 """Low-level XML helpers for python-docx features it doesn't expose."""
+# python-docx does not expose public APIs for paragraph/run XML elements.
+# Accessing `._p`, `._r`, `._element` and `._tc` is the intended way to
+# reach the underlying XML; there is no public alternative.
+# pylint: disable=protected-access
+from typing import Any
+
+from docx.document import Document as DocxDocument
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
@@ -13,22 +20,22 @@ def add_hyperlink(paragraph: Paragraph, text: str, url: str,
     hyperlink.set(qn('r:id'), r_id)
 
     run = OxmlElement('w:r')
-    rPr = OxmlElement('w:rPr')
+    r_pr = OxmlElement('w:rPr')
 
-    u = OxmlElement('w:u')
-    u.set(qn('w:val'), 'single')
-    rPr.append(u)
+    underline = OxmlElement('w:u')
+    underline.set(qn('w:val'), 'single')
+    r_pr.append(underline)
 
-    c = OxmlElement('w:color')
-    c.set(qn('w:val'), color)
-    rPr.append(c)
+    color_el = OxmlElement('w:color')
+    color_el.set(qn('w:val'), color)
+    r_pr.append(color_el)
 
-    run.append(rPr)
+    run.append(r_pr)
 
-    t = OxmlElement('w:t')
-    t.text = text
-    t.set(qn('xml:space'), 'preserve')
-    run.append(t)
+    text_el = OxmlElement('w:t')
+    text_el.text = text
+    text_el.set(qn('xml:space'), 'preserve')
+    run.append(text_el)
 
     hyperlink.append(run)
     paragraph._p.append(hyperlink)
@@ -36,26 +43,41 @@ def add_hyperlink(paragraph: Paragraph, text: str, url: str,
 
 def set_paragraph_shading(paragraph: Paragraph, fill: str) -> None:
     """Set paragraph background color (hex without '#')."""
-    pPr = paragraph._p.get_or_add_pPr()
-    shd = OxmlElement('w:shd')
-    shd.set(qn('w:val'), 'clear')
-    shd.set(qn('w:color'), 'auto')
-    shd.set(qn('w:fill'), fill)
-    pPr.append(shd)
+    p_pr = paragraph._p.get_or_add_pPr()
+    shading = OxmlElement('w:shd')
+    shading.set(qn('w:val'), 'clear')
+    shading.set(qn('w:color'), 'auto')
+    shading.set(qn('w:fill'), fill)
+    p_pr.append(shading)
 
 
-def set_paragraph_bottom_border(paragraph: Paragraph, size: int = 6,
+def set_paragraph_bottom_border(paragraph: Paragraph,
+                                 size: int = 6,
                                  color: str = 'auto') -> None:
     """Draw a horizontal rule as bottom border of the paragraph."""
-    pPr = paragraph._p.get_or_add_pPr()
-    pBdr = OxmlElement('w:pBdr')
+    p_pr = paragraph._p.get_or_add_pPr()
+    p_bdr = OxmlElement('w:pBdr')
     bottom = OxmlElement('w:bottom')
     bottom.set(qn('w:val'), 'single')
     bottom.set(qn('w:sz'), str(size))
     bottom.set(qn('w:space'), '1')
     bottom.set(qn('w:color'), color)
-    pBdr.append(bottom)
-    pPr.append(pBdr)
+    p_bdr.append(bottom)
+    p_pr.append(p_bdr)
+
+
+def clear_cell_content(cell: Any) -> None:
+    """Remove every paragraph from a cell.
+
+    python-docx has no public method to delete a paragraph from a
+    cell. The XML element must be detached from its parent directly.
+    After this call the cell has zero paragraphs; the caller is
+    expected to add a new one (Word requires every cell to end up
+    with at least one paragraph, but python-docx only validates this
+    at save time).
+    """
+    for para in list(cell.paragraphs):
+        para._element.getparent().remove(para._element)
 
 
 def _add_field(paragraph: Paragraph, instr: str,
@@ -87,9 +109,9 @@ def _add_field(paragraph: Paragraph, instr: str,
     r.append(instr_el)
     r.append(fld_sep)
     if placeholder:
-        t = OxmlElement('w:t')
-        t.text = placeholder
-        r.append(t)
+        text_el = OxmlElement('w:t')
+        text_el.text = placeholder
+        r.append(text_el)
     r.append(fld_end)
 
 
@@ -117,7 +139,8 @@ def mark_fields_dirty(paragraph: Paragraph) -> None:
                 fld.set(qn('w:dirty'), 'true')
 
 
-def set_update_fields_on_open(doc, value: bool = True) -> None:
+def set_update_fields_on_open(doc: DocxDocument,
+                              value: bool = True) -> None:
     """Set w:updateFields in settings.xml so Word refreshes fields on open."""
     settings = doc.settings.element
     existing = settings.find(qn('w:updateFields'))
@@ -147,11 +170,7 @@ def add_bookmark_end(paragraph: Paragraph, bookmark_id: int) -> None:
 
 
 def add_seq_field(paragraph: Paragraph, seq_name: str) -> None:
-    """Insert a SEQ field — Word's per-name auto-increment counter.
-
-    Each SEQ <name> gets a sequential number on update. Names must be
-    unique per counter — e.g. 'Table' for tables, 'Figure' for images.
-    """
+    """Insert a SEQ field — Word's per-name auto-increment counter."""
     _add_field(
         paragraph,
         f'SEQ {seq_name} \\* ARABIC',
@@ -161,10 +180,7 @@ def add_seq_field(paragraph: Paragraph, seq_name: str) -> None:
 
 
 def add_ref_field(paragraph: Paragraph, bookmark_name: str) -> None:
-    """Insert a REF field pointing at a bookmark.
-
-    The trailing \\h flag makes the reference a hyperlink in Word.
-    """
+    """Insert a REF field pointing at a bookmark."""
     _add_field(
         paragraph,
         f'REF {bookmark_name} \\h',
