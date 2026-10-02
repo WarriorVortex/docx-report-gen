@@ -15,5 +15,5 @@ def apply_lists(doc: DocxDocument, config: StylesConfig) -> None:
         if style is None:
             continue
         apply_font(style, resolved, default_font=config.font)
-        if resolved.indent is not None:
-            style.paragraph_format.left_indent = Cm(resolved.indent)
+        if resolved.left_indent is not None:
+            style.paragraph_format.left_indent = Cm(resolved.left_indent)
