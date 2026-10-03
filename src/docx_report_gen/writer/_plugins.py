@@ -1,5 +1,5 @@
 """Plugin helpers for the writer singleton."""
-from typing import Any, Callable, cast
+from typing import Any, Callable, Union, cast
 
 from ..plugins import (
     Plugin,
@@ -9,11 +9,11 @@ from ..plugins import (
 from ._state import current
 
 
-# Handlers and factories are user-provided callables with arbitrary
-# signatures. The registry validates them at runtime; typing here
-# stays loose on purpose.
 BlockHandler = Callable[..., Any]
 InlineFactory = Callable[..., Any]
+
+# use_plugin accepts three forms: name, class, instance.
+PluginRef = Union[str, type, Plugin]
 
 
 def register_plugin(plugin: Plugin) -> Plugin:
@@ -26,17 +26,11 @@ def register_plugin(plugin: Plugin) -> Plugin:
     Returns:
         The registered plugin, for convenience.
     """
-    # PluginsRegistry.register returns Any because plugins are
-    # duck-typed (any object with setup + name). We know the concrete
-    # type here: it is the same object that was passed in.
     return cast(Plugin, _global_plugins.register(plugin))
 
 
 def unregister_plugin(plugin: Plugin) -> None:
-    """Remove a plugin from the global registry.
-
-    Reports already created are unaffected.
-    """
+    """Remove a plugin from the global registry."""
     _global_plugins.unregister(plugin)
 
 
@@ -47,6 +41,37 @@ def plugins() -> PluginsRegistry:
     custom inline nodes and block methods.
     """
     return current().plugins
+
+
+def use_plugin(plugin: PluginRef) -> Any:
+    """Return a plugin handle for the current session.
+
+    Accepts:
+        use_plugin('my-plugin')    # by name
+        use_plugin(MyPlugin)       # by class — uses cls.name
+        use_plugin(instance)       # by instance — uses instance.name
+
+    The returned object is the plugin clone attached to the current
+    Report. Its methods see `self.report`, so they can be called
+    without passing the Report explicitly:
+
+        class MyPlugin(Plugin):
+            name = 'my-plugin'
+            def centered(self, text):
+                self.report.p(text, align='center')
+
+        writer.plugins().register(MyPlugin())
+        writer.use_plugin('my-plugin').centered('Hello')
+
+    Raises:
+        KeyError: plugin with that name is not visible. The error
+            message lists available names.
+    """
+    if isinstance(plugin, str):
+        name = plugin
+    else:
+        name = getattr(plugin, 'name', None) or type(plugin).__name__
+    return current().plugins.resolve(name)
 
 
 def block(name: str, handler: BlockHandler) -> None:

@@ -105,15 +105,6 @@ def test_new_accepts_metadata():
     writer.new(metadata=md)
     assert writer.current().metadata.author == 'Tester'
 
-
-def test_configure_is_alias_for_new():
-    writer.h1('X')
-    r1 = writer.current()
-    r2 = writer.configure()
-    assert writer.current() is r2
-    assert r1 is not r2
-
-
 # ---------- attach / detach ----------
 
 def test_attach_installs_existing_report():
@@ -610,3 +601,123 @@ def test_block_methods_return_none():
     assert writer.h1('X') is None
     assert writer.p('Y') is None
     assert writer.table([['A']]) is None
+
+# ---------- use_plugin ----------
+
+def test_use_plugin_by_name():
+    from docx_report_gen import Plugin
+
+    class P(Plugin):
+        name = 'my-plugin'
+
+    writer.h1('X')                          # creates session
+    writer.plugins().register(P())
+    p = writer.use_plugin('my-plugin')
+    assert p is writer.current().plugins.get_plugin('my-plugin')
+
+
+def test_use_plugin_by_class():
+    from docx_report_gen import Plugin
+
+    class ByClassPlugin(Plugin):
+        name = 'by-class'
+
+    writer.h1('X')
+    writer.plugins().register(ByClassPlugin())
+    p = writer.use_plugin(ByClassPlugin)
+    assert p is writer.current().plugins.get_plugin('by-class')
+
+
+def test_use_plugin_by_instance():
+    from docx_report_gen import Plugin
+
+    class ByInstancePlugin(Plugin):
+        name = 'by-instance'
+
+    writer.h1('X')
+    instance = ByInstancePlugin()
+    writer.plugins().register(instance)
+    p = writer.use_plugin(instance)
+    assert p is writer.current().plugins.get_plugin('by-instance')
+
+
+def test_use_plugin_methods_use_self_report():
+    """Plugin methods access self.report; no argument passing needed."""
+    from docx_report_gen import Plugin
+
+    class CenteredPlugin(Plugin):
+        name = 'centered'
+
+        def centered(self, text):
+            self.report.p(text, align='center')
+
+    writer.h1('X')
+    writer.plugins().register(CenteredPlugin())
+    writer.use_plugin('centered').centered('hello')
+
+    texts = [p.text for p in writer.current().doc.paragraphs]
+    assert 'hello' in texts
+
+
+def test_use_plugin_finds_global_plugin_clone():
+    """A globally registered plugin is cloned per session; use_plugin
+    returns the clone, not the template."""
+    from docx_report_gen import Plugin
+
+    class GlobalPlugin(Plugin):
+        name = 'global-here'
+
+    template = GlobalPlugin()
+    writer.register_plugin(template)
+
+    writer.h1('X')                          # new session clones globals
+    clone = writer.use_plugin('global-here')
+    assert clone is not template
+    assert clone is writer.current().plugins.get_plugin('global-here')
+
+
+def test_use_plugin_missing_raises():
+    writer.h1('X')
+    with pytest.raises(KeyError):
+        writer.use_plugin('definitely-not-registered')
+
+
+def test_use_plugin_error_lists_available():
+    from docx_report_gen import Plugin
+
+    class Known(Plugin):
+        name = 'known-plugin'
+
+    writer.h1('X')
+    writer.plugins().register(Known())
+    with pytest.raises(KeyError, match='known-plugin'):
+        writer.use_plugin('missing-plugin')
+
+
+def test_use_plugin_works_with_block_registration():
+    """Both conventions coexist: block registration AND direct methods."""
+    from docx_report_gen import Plugin
+
+    class BothPlugin(Plugin):
+        name = 'both'
+
+        def setup(self, report):
+            # Block registration — for `writer.both_shout(...)`
+            self.registry.block('both_shout', self._shout)
+
+        def _shout(self, report, text):
+            report.p(text.upper())
+
+        def quiet(self, text):
+            # Direct method — self.report is set, no argument needed
+            self.report.p(text.lower())
+
+    writer.h1('X')
+    writer.plugins().register(BothPlugin())
+
+    writer.both_shout('loud')                          # block API
+    writer.use_plugin('both').quiet('QUIET')           # direct API
+
+    texts = [p.text for p in writer.current().doc.paragraphs]
+    assert 'LOUD' in texts
+    assert 'quiet' in texts

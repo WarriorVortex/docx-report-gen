@@ -1,9 +1,5 @@
-"""Tests for PluginsRegistry — registration, conflicts, parent chain.
+"""Tests for PluginsRegistry — registration, conflicts, parent chain."""
 
-These tests exercise the registry in isolation, without a Report.
-The global instance is cleared between tests by the autouse fixture
-in conftest.py, so each test starts with an empty parent.
-"""
 import pytest
 
 from docx_report_gen.plugins import Plugin, PluginsRegistry
@@ -65,6 +61,45 @@ def test_register_two_plugins_with_different_names():
     assert set(reg.plugin_names()) == {'simple', 'other'}
 
 
+# ---------- resolve ----------
+
+def test_resolve_returns_registered_plugin():
+    reg = PluginsRegistry()
+    p = SimplePlugin()
+    reg.register(p)
+    assert reg.resolve('simple') is p
+
+
+def test_resolve_raises_on_missing():
+    reg = PluginsRegistry()
+    with pytest.raises(KeyError):
+        reg.resolve('missing')
+
+
+def test_resolve_error_lists_available_names():
+    reg = PluginsRegistry()
+    reg.register(SimplePlugin())
+    with pytest.raises(KeyError, match='simple'):
+        reg.resolve('missing')
+
+
+def test_resolve_walks_to_parent():
+    parent = PluginsRegistry()
+    p = SimplePlugin()
+    parent.register(p)
+    child = PluginsRegistry(parent=parent)
+    assert child.resolve('simple') is p
+
+
+def test_resolve_prefers_local_over_parent():
+    parent = PluginsRegistry()
+    parent.register(SimplePlugin())
+    child = PluginsRegistry(parent=parent)
+    local = SimplePlugin()
+    child.register(local)
+    assert child.resolve('simple') is local
+
+
 # ---------- unregister ----------
 
 def test_unregister_removes_plugin():
@@ -83,7 +118,6 @@ def test_unregister_unknown_raises():
 
 
 def test_unregister_with_different_instance_raises():
-    """A plugin with the same name but a different identity is rejected."""
     reg = PluginsRegistry()
     a = SimplePlugin()
     b = SimplePlugin()

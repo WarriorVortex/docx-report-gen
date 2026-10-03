@@ -37,25 +37,24 @@ def new(
     metadata: Optional[DocumentMetadata] = None,
     plugins: Optional[list[Plugin]] = None,
 ) -> Report:
-    """Reset the session and create a fresh Report with the given config.
+    """Reset the session and create a fresh Report.
 
-    Everything written before this call is discarded. Returns the
-    newly created Report.
+    Everything written before this call is discarded. The next
+    block-level call operates on the new document.
+
+    Args:
+        config: StylesConfig for the new Report.
+        metadata: DocumentMetadata for the new Report.
+        plugins: additional plugins attached to this Report only.
+
+    Returns:
+        The newly created Report.
     """
     global _current
     _current = Report(
         config=config, metadata=metadata, plugins=plugins,
     )
     return _current
-
-
-def configure(
-    config: Optional[StylesConfig] = None,
-    metadata: Optional[DocumentMetadata] = None,
-    plugins: Optional[list[Plugin]] = None,
-) -> Report:
-    """Alias for new(). Reads better when the intent is 'set up'."""
-    return new(config=config, metadata=metadata, plugins=plugins)
 
 
 def attach(report: Report) -> Report:
