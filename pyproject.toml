@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "docx-report-gen"
-version = "0.2.0"
+version = "0.3.0"
 description = "Minimal wrapper over python-docx and math2docx for generating docx reports"
 requires-python = ">=3.10"
 dependencies = [
@@ -22,6 +22,9 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+docx_report_gen = ["py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
