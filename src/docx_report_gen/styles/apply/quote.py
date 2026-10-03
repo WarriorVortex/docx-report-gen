@@ -12,5 +12,5 @@ def apply_quote(doc: DocxDocument, config: StylesConfig) -> None:
     resolved = resolve_quote(config)
     style = ensure_style(doc, QUOTE_STYLE_NAME)
     apply_font(style, resolved, default_font=config.font)
-    if resolved.indent is not None:
-        style.paragraph_format.left_indent = Cm(resolved.indent)
+    if resolved.left_indent is not None:
+        style.paragraph_format.left_indent = Cm(resolved.left_indent)

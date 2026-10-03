@@ -2,10 +2,12 @@
 from importlib.metadata import version, PackageNotFoundError
 
 from . import docx
+from . import writer
 from .inline import (
-    b, i, u, s, sup, sub, color, highlight, f, link, ref,
+    b, i, u, s, sup, sub, color, highlight, code, f, link, ref,
 )
 from .metadata import DocumentMetadata
+from .plugins import Plugin, PluginsRegistry
 from .report import Report
 from .styles import (
     CaptionStyle, CodeStyle, HeadingStyle, ImageStyle,
@@ -20,6 +22,8 @@ except PackageNotFoundError:
 
 __all__ = [
     'Report',
+    'Plugin',
+    'PluginsRegistry',
     'StylesConfig',
     'DocumentMetadata',
     'HeadingStyle',
@@ -32,6 +36,7 @@ __all__ = [
     'TableStyle',
     'LayoutStyle',
     'b', 'i', 'u', 's', 'sup', 'sub', 'color', 'highlight',
-    'f', 'link', 'ref',
+    'code', 'f', 'link', 'ref',
     'docx',
+    'writer',
 ]

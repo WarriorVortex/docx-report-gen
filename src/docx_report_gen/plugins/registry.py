@@ -1,23 +1,8 @@
-"""Registry of plugins, block methods and inline node factories.
-
-Two instances of this class exist in a running program:
-
-- The global instance (``docx_report_gen.plugins.plugins``). It holds
-  plugin templates and registrations that apply to every Report
-  created from now on.
-- A per-Report instance (``report.plugins``), created in Report.__init__
-  with the global instance as parent. It holds plugin clones and
-  per-instance registrations.
-
-Lookups walk from the instance up to the parent, so local
-registrations shadow global ones without raising.
-"""
+"""Registry of plugins, block methods and inline node factories."""
 import copy
 from typing import Any, Callable, Iterator, Optional
 
 
-# Names that cannot be used for block registration: they would shadow
-# real Report attributes or methods, or the mixin API.
 RESERVED_BLOCKS = frozenset({
     'doc', 'config', 'metadata', 'plugins',
     'style', 'save', 'close',
@@ -34,21 +19,17 @@ RESERVED_BLOCKS = frozenset({
     'next_bookmark_id',
 })
 
-# Names that cannot be used for inline registration: they would shadow
-# existing inline factories exported from docx_report_gen.inline.
 RESERVED_INLINES = frozenset({
     'b', 'i', 'u', 's', 'sup', 'sub',
-    'color', 'highlight',
+    'color', 'highlight', 'code',
     'f', 'link', 'ref',
     'Inline', 'Bold', 'Italic', 'Underline', 'Strike',
-    'Sup', 'Sub', 'Color', 'Highlight', 'Formula', 'Link',
-    'Reference',
+    'Sup', 'Sub', 'Color', 'Highlight', 'CodeInline',
+    'Formula', 'Link', 'Reference',
 })
 
 _RESERVED = RESERVED_BLOCKS | RESERVED_INLINES
 
-# Registry collections hold heterogeneous callables. Precise types
-# would require importing from inline and mixins, creating cycles.
 BlockHandler = Callable[..., Any]
 InlineFactory = Callable[..., Any]
 
@@ -56,17 +37,11 @@ InlineFactory = Callable[..., Any]
 class PluginsRegistry:
     """Registry of plugins, block methods and inline node factories."""
 
-    def __init__(self,
-                 parent: Optional['PluginsRegistry'] = None,
-                 owner: Any = None) -> None:
-        """
-        Args:
-            parent: another PluginsRegistry used as fallback for
-                lookups. None for the global registry.
-            owner: the Report this registry belongs to. When set,
-                register() attaches plugins to it and calls setup().
-                None for the global registry.
-        """
+    def __init__(
+        self,
+        parent: Optional['PluginsRegistry'] = None,
+        owner: Any = None,
+    ) -> None:
         self._parent = parent
         self._owner = owner
         self._plugins: dict[str, Any] = {}
@@ -76,12 +51,7 @@ class PluginsRegistry:
     # ---------- plugins ----------
 
     def register(self, plugin: Any) -> Any:
-        """Attach a plugin to this registry.
-
-        Validates the name, assigns `plugin.report` and
-        `plugin.registry`, stores the plugin, and — when the registry
-        has an owner — calls `plugin.setup(owner)`.
-        """
+        """Attach a plugin to this registry."""
         if not hasattr(plugin, 'setup'):
             raise TypeError(
                 f'plugin must have a setup(report) method, '
@@ -119,11 +89,42 @@ class PluginsRegistry:
         del self._plugins[name]
 
     def get_plugin(self, name: str) -> Optional[Any]:
-        """Return a plugin by name. Checks local, then parent, then None."""
+        """Return a plugin by name, or None. Does not raise."""
         if name in self._plugins:
             return self._plugins[name]
         if self._parent is not None:
             return self._parent.get_plugin(name)
+        return None
+
+    def resolve(self, name: str) -> Any:
+        """Return the plugin registered under `name`.
+
+        Looks up in this registry, then in the parent chain. Used by
+        writer.use_plugin() to obtain a plugin handle for direct method
+        calls.
+
+        Raises:
+            KeyError: no plugin with that name is visible. The error
+                message lists the names that *are* available, which
+                makes typos easier to diagnose than a bare KeyError.
+        """
+        plugin = self._lookup(name)
+        if plugin is not None:
+            return plugin
+        # Called on the top-level registry, so plugin_names() sees this
+        # registry's plugins plus everything reachable through parents.
+        available = ', '.join(sorted(self.plugin_names())) or '(none)'
+        raise KeyError(
+            f"plugin {name!r} is not registered; "
+            f"available: {available}"
+        )
+
+    def _lookup(self, name: str) -> Optional[Any]:
+        """Search this registry then the parent chain. No error message."""
+        if name in self._plugins:
+            return self._plugins[name]
+        if self._parent is not None:
+            return self._parent._lookup(name)
         return None
 
     def plugin_names(self) -> tuple[str, ...]:
@@ -219,14 +220,7 @@ class PluginsRegistry:
         other: dict[str, Any],
         other_kind: str,
     ) -> None:
-        """Shared validation and insertion for inline and block.
-
-        The caller is responsible for the callable() check. This method
-        handles the three conflict cases:
-          - reserved name (would shadow core Report API)
-          - name already used by the other kind in this registry
-          - name already registered under the same kind
-        """
+        """Shared validation and insertion for inline and block."""
         if name in _RESERVED:
             raise ValueError(f"name '{name}' is reserved")
         if name in other:
@@ -240,7 +234,6 @@ class PluginsRegistry:
     # ---------- iteration and utilities ----------
 
     def __iter__(self) -> Iterator[Any]:
-        """Iterate over plugins registered in this registry (not parent)."""
         return iter(self._plugins.values())
 
     def __len__(self) -> int:

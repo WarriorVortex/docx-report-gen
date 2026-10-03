@@ -9,6 +9,7 @@ from .lists import ListMixin
 from .paragraphs import ParagraphMixin
 from .tables import TableMixin
 from .toc import TocMixin
+from .plugins import PluginMixin
 
 __all__ = [
     'DocMixin',
@@ -21,4 +22,5 @@ __all__ = [
     'ParagraphMixin',
     'TableMixin',
     'TocMixin',
+    'PluginMixin',
 ]
