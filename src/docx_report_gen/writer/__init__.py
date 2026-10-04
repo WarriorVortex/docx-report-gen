@@ -13,22 +13,17 @@ Example:
     code.block('def f(x):\\n    return x ** 2')
     save('out.docx')
 
-Plugins in writer mode:
+Starting from an existing .docx:
 
-    Use use_plugin(name) to obtain a registered plugin for the
-    current session, then call its methods directly. Plugin methods
-    see `self.report`, so nothing needs to be passed explicitly:
+    new(source='Титульный лист.docx')
+    h1('Введение')
+    p('Содержимое начинается со второй страницы.')
+    save('report.docx')
 
-        class MyPlugin(Plugin):
-            name = 'my-plugin'
-            def centered(self, text):
-                self.report.p(text, align='center')
+Or replace the document mid-session:
 
-        writer.plugins().register(MyPlugin())
-        writer.use_plugin('my-plugin').centered('Hello')
-
-    Use use_plugin(MyPlugin) to look up by class, or
-    use_plugin(instance) to look up by the instance's name.
+    set_source('другой.docx')
+    set_document(opened_docx)
 
 Accessor pattern:
 
@@ -37,11 +32,6 @@ Accessor pattern:
 
     code('text')          -> returns an Inline CodeInline node
     code.block('text')    -> adds a block code paragraph
-
-Bare calls do not modify the document; the .block() methods do.
-
-Block-level functions return None. For chained calls, use the Report
-object API directly.
 """
 from typing import Any
 
@@ -69,13 +59,15 @@ from ._plugins import (
 )
 from ._state import (
     attach, close, current, detach, has_session, new, reset,
+    set_document, set_source,
 )
 
 
 __all__ = [
     # session management
-    'new', 'reset', 'attach', 'detach',
-    'current', 'has_session',
+    'new', 'reset', 'attach', 'detach', 'current', 'has_session',
+    # document replacement
+    'set_source', 'set_document',
     # config / metadata
     'config', 'set_config', 'apply_styles',
     'metadata', 'set_metadata', 'apply_metadata',
@@ -93,9 +85,8 @@ __all__ = [
     'toc', 'update_toc', 'header', 'footer', 'page_numbers',
     # lifecycle
     'save', 'close',
-    # accessors — bare call returns Inline; .block(...) adds paragraph
-    'f',
-    'code',
+    # accessors
+    'f', 'code',
     # inline factories
     'b', 'i', 'u', 's', 'sup', 'sub', 'color', 'highlight',
     'link', 'ref',
@@ -103,21 +94,7 @@ __all__ = [
 
 
 def __getattr__(name: str) -> Any:
-    """Delegate unknown attributes to the current Report.
-
-    Fires only when a name is not found at module level. Enables
-    access to plugin-registered block methods and inline factories
-    through the writer namespace:
-
-        import docx_report_gen.writer as writer
-        writer.centered('X')       # plugin block method
-        writer.boxed('text')       # plugin inline factory
-
-    For plugins whose methods use `self.report` (not block
-    registration), use `use_plugin(name)` to obtain a handle:
-
-        writer.use_plugin('my-plugin').centered('X')
-    """
+    """Delegate unknown attributes to the current Report."""
     if name.startswith('_'):
         raise AttributeError(name)
     report = current()

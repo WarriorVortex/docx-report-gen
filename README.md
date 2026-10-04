@@ -8,6 +8,11 @@ reusable extensions. Cross-references, formulas, TOC, page numbers —
 all through native Word fields, so numbering stays correct when the
 document is edited.
 
+Reports can start from an empty document or from an existing `.docx`
+file. When started from a file, all its styles, docDefaults, headers,
+images and sections are preserved as-is; new content is appended
+after it.
+
 Built on top of [`python-docx`](https://python-docx.readthedocs.io/)
 and [`math2docx`](https://github.com/py-pdf/math2docx).
 
@@ -20,7 +25,7 @@ and [`math2docx`](https://github.com/py-pdf/math2docx).
 
 ## Status
 
-Alpha, version `0.3.0`. The public API is stable within the `0.x`
+Alpha, version `0.3.1`. The public API is stable within the `0.x`
 series, but may change in minor releases.
 
 ---
@@ -80,11 +85,39 @@ p('See table ', ref('data'), '.')
 save('report.docx')
 ```
 
+### Starting from an existing .docx
+
+Both APIs can start from a file. The file becomes the base document:
+its styles, docDefaults and content are preserved as-is. New content
+is appended after it.
+
+```python
+from docx_report_gen import Report, TitlePagePlugin  # plugin optional
+
+r = Report(source='Титульный лист.docx')
+r.page_break()
+r.h1('Введение')
+r.p('Основной текст начинается со второй страницы.')
+r.save('report.docx')
+```
+
+Or via the writer API:
+
+```python
+from docx_report_gen.writer import new, h1, p, save
+
+new(source='Титульный лист.docx')
+h1('Введение')
+p('Основной текст.')
+save('report.docx')
+```
+
 ---
 
 ## Contents
 
 - [Two APIs](#two-apis)
+- [Starting from an existing document](#starting-from-an-existing-document)
 - [Styles](#styles)
 - [Metadata](#metadata)
 - [Inline nodes](#inline-nodes)
@@ -149,16 +182,19 @@ statements.
 ```python
 from docx_report_gen.writer import (
     new, reset, attach, detach, current, has_session,
+    set_source, set_document,
 )
 
 new()                             # fresh Report, drops previous session
 new(config=my_config)             # fresh Report with config
-new(metadata=md, plugins=[p])     # fresh Report with metadata + plugins
+new(source='base.docx')           # fresh Report from an existing .docx
 reset()                           # drop session, no Report created
 attach(existing_report)           # install an existing Report
 detach()                          # return the Report, drop session
 current()                         # access the current Report
 has_session()                     # True if a Report exists
+set_source('other.docx')          # replace the document mid-session
+set_document(opened_docx)         # replace with a Document object
 ```
 
 For a single document, `new()` is not required — the Report is
@@ -167,6 +203,102 @@ created on the first block call.
 **Threading.** `writer` is a process-global singleton and is not
 thread-safe. For concurrent document generation, use `Report`
 directly.
+
+---
+
+## Starting from an existing document
+
+The `source` parameter opens a `.docx` file as the base document.
+This is the recommended way to include a title page, letterhead,
+pre-styled template or any other preexisting content without losing
+its formatting.
+
+### Object API
+
+```python
+from docx_report_gen import Report
+
+# From a path (str or Path)
+r = Report(source='Титульный лист.docx')
+r.page_break()
+r.h1('Введение')
+r.save('report.docx')
+
+# From an already-opened Document
+from docx import Document
+opened = Document('title.docx')
+r = Report(source=opened)
+
+# Replace the document mid-session
+r = Report()
+r.h1('This will be discarded')
+r.set_source('Титульный лист.docx')
+r.h1('Введение')
+
+# Replace with a Document object
+from docx import Document
+r.set_document(Document('template.docx'))
+
+# Keep the source styles completely untouched
+r.set_source('template.docx', apply_styles=False)
+```
+
+### Writer API
+
+```python
+from docx_report_gen.writer import (
+    new, set_source, set_document, h1, p, save, current,
+)
+
+new(source='Титульный лист.docx')
+h1('Введение')
+save('report.docx')
+
+# Replace mid-session
+set_source('другой.docx')
+h1('Новое введение')
+save('report2.docx')
+
+# From a Document object
+from docx import Document
+set_document(Document('template.docx'))
+```
+
+### What is preserved
+
+Everything in the source file:
+
+- All paragraphs, tables, images, embedded objects
+- All styles, including style definitions not used by the content
+- `docDefaults` (paragraph and run defaults)
+- Headers, footers, page numbers
+- Section properties: page size, orientation, margins
+- Numbered and bulleted list definitions
+- Document properties (core metadata)
+
+### What changes
+
+- The Report's `config` styles are re-applied to the document by
+  default (`Normal`, `Heading 1..6`, `Title`, `ReportCode`, ...).
+  This ensures that content added afterwards has the expected look.
+  Pass `apply_styles=False` to skip and keep the source styles
+  untouched.
+
+- Bookmark, formula and table counters are reset. If the source
+  already had numbered tables, the next one starts from 1.
+
+### Save behavior
+
+The document is written as-is. No transformation, no XML merge, no
+`docDefaults` resolution. What you see in the source is what ends up
+in the output, with new content appended.
+
+```python
+r = Report(source='source.docx')
+r.h1('New content')
+r.save('out.docx')
+# out.docx contains the full source, plus New content at the end.
+```
 
 ---
 
@@ -277,6 +409,9 @@ Metadata is written to `core_properties`. It is re-applied on every
 r.metadata.author = 'Другой автор'
 r.save('out.docx')     # core_properties.author is now 'Другой автор'
 ```
+
+When a Report starts from a source file, the source's metadata is
+preserved unless explicitly overwritten.
 
 ---
 
@@ -445,6 +580,10 @@ r.hr()
 - `page_numbers(skip_first=True)` suppresses the header and footer
   on the first page — useful for title pages.
 
+When a Report starts from a source file that already has headers or
+footers, calls to `header()`, `footer()` or `page_numbers()`
+overwrite them for the entire document.
+
 ---
 
 ## Plugins
@@ -586,6 +725,17 @@ r.apply_metadata()                      # flush to core_properties now
 `save()` re-applies metadata automatically. `apply_metadata()` is
 only needed if you want to inspect `core_properties` before saving.
 
+### Replacing the document
+
+See [Starting from an existing document](#starting-from-an-existing-document)
+for the full guide.
+
+```python
+r.set_source('template.docx')           # replace, re-apply styles
+r.set_source('template.docx', apply_styles=False)  # keep styles as-is
+r.set_document(opened_docx)             # from a Document object
+```
+
 ---
 
 ## API reference
@@ -611,8 +761,17 @@ from docx_report_gen import (
 
 | Method | Purpose |
 |---|---|
+| **Construction** | |
+| `Report(config=, metadata=, plugins=, source=)` | Create a Report |
+| **Document replacement** | |
+| `set_source(path, apply_styles=True)` | Replace with contents of a .docx |
+| `set_document(doc, apply_styles=True)` | Replace with a Document object |
+| **Structure** | |
 | `title(text, align=None)` | Title paragraph |
 | `h1..h6(text, align=None)` | Headings level 1–6 |
+| `page_break()` | Page break |
+| `hr()` | Horizontal rule |
+| **Content** | |
 | `p(*parts, **layout)` | Paragraph from strings and inline nodes |
 | `f(latex, align=None, number=False)` | Block formula |
 | `quote(*parts, **layout)` | Block quote |
@@ -624,18 +783,19 @@ from docx_report_gen import (
 | `merge_cells(r1, c1, r2, c2, text=None)` | Merge cells |
 | `merge_row(row, c1, c2, text=None)` | Merge row cells |
 | `merge_col(col, r1, r2, text=None)` | Merge column cells |
+| **Page furniture** | |
 | `toc(title=None, levels='1-3')` | Table of contents |
 | `update_toc()` | Mark fields dirty for Word |
 | `header(text, align='center')` | Header |
 | `footer(text=None, align='center')` | Footer |
 | `page_numbers(align='center', skip_first=True)` | Page numbers |
-| `page_break()` | Page break |
-| `hr()` | Horizontal rule |
+| **Runtime configuration** | |
 | `set_config(config)` | Replace config, re-apply styles |
 | `apply_styles()` | Re-apply config after in-place edits |
 | `set_metadata(metadata)` | Replace metadata |
 | `apply_metadata()` | Flush metadata to `core_properties` |
 | `style(name)` | Access python-docx style |
+| **Lifecycle** | |
 | `save(path)` | Write the document |
 | `close()` | Run plugin close hooks, clear registry |
 
@@ -646,12 +806,15 @@ from docx_report_gen import (
 | Function | Purpose |
 |---|---|
 | **Session** | |
-| `new(config=None, metadata=None, plugins=None)` | Fresh Report |
+| `new(config=None, metadata=None, plugins=None, source=None)` | Fresh Report |
 | `reset()` | Drop session |
 | `attach(report)` | Install existing Report |
 | `detach()` | Return the Report, drop session |
 | `current()` | Access the Report (creates one) |
 | `has_session()` | Session is active |
+| **Document replacement** | |
+| `set_source(path, apply_styles=True)` | Replace document with .docx contents |
+| `set_document(doc, apply_styles=True)` | Replace with a Document object |
 | **Config / metadata** | |
 | `config()` | Current `StylesConfig` |
 | `set_config(cfg)` | Replace config, re-apply |
