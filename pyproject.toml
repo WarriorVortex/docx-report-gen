@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "docx-report-gen"
-version = "0.3.1"
+version = "0.3.2"
 description = "Minimal wrapper over python-docx and math2docx for generating docx reports"
 requires-python = ">=3.10"
 dependencies = [
