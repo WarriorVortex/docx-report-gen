@@ -1,16 +1,15 @@
-"""Session state for the writer singleton.
+"""Session state for the writer singleton."""
+from typing import Optional, Union
+from pathlib import Path
 
-Holds the only mutable module-level variable in the writer package:
-the current Report. Every other submodule reads it through `current()`
-or mutates it through `new`, `attach`, `detach`, `reset`, `close`.
-"""
-from typing import Optional
-
+from ..docx import DocxDocument
 from ..metadata import DocumentMetadata
 from ..plugins import Plugin
 from ..report import Report
 from ..styles import StylesConfig
 
+
+SourceType = Union[str, Path, DocxDocument]
 
 _current: Optional[Report] = None
 
@@ -21,11 +20,7 @@ def has_session() -> bool:
 
 
 def current() -> Report:
-    """Return the current Report, creating one on the first call.
-
-    Lazy creation keeps `import docx_report_gen.writer` side-effect
-    free: no document is constructed until the first write.
-    """
+    """Return the current Report, creating one on the first call."""
     global _current
     if _current is None:
         _current = Report()
@@ -36,16 +31,17 @@ def new(
     config: Optional[StylesConfig] = None,
     metadata: Optional[DocumentMetadata] = None,
     plugins: Optional[list[Plugin]] = None,
+    source: Optional[SourceType] = None,
 ) -> Report:
     """Reset the session and create a fresh Report.
-
-    Everything written before this call is discarded. The next
-    block-level call operates on the new document.
 
     Args:
         config: StylesConfig for the new Report.
         metadata: DocumentMetadata for the new Report.
         plugins: additional plugins attached to this Report only.
+        source: optional base document. A path to a .docx file, or an
+            already-opened Document. When given, the file becomes the
+            base of the Report; when None, an empty document is used.
 
     Returns:
         The newly created Report.
@@ -53,19 +49,45 @@ def new(
     global _current
     _current = Report(
         config=config, metadata=metadata, plugins=plugins,
+        source=source,
     )
     return _current
 
 
-def attach(report: Report) -> Report:
-    """Attach an existing Report as the current singleton.
+def set_source(
+    source: SourceType,
+    *,
+    apply_styles: bool = True,
+) -> Report:
+    """Replace the current Report's document with a .docx file.
 
-    Replaces any active session without calling close() on it. Call
-    close() or detach() first if teardown is required.
+    Equivalent to `current().set_source(source)`. Creates a session
+    if none exists.
 
-    Raises:
-        TypeError: `report` is not a Report instance.
+    Returns:
+        The current Report.
     """
+    return current().set_source(source, apply_styles=apply_styles)
+
+
+def set_document(
+    doc: DocxDocument,
+    *,
+    apply_styles: bool = True,
+) -> Report:
+    """Replace the current Report's Document object.
+
+    Equivalent to `current().set_document(doc)`. Creates a session
+    if none exists.
+
+    Returns:
+        The current Report.
+    """
+    return current().set_document(doc, apply_styles=apply_styles)
+
+
+def attach(report: Report) -> Report:
+    """Attach an existing Report as the current singleton."""
     global _current
     if not isinstance(report, Report):
         raise TypeError(
@@ -77,10 +99,7 @@ def attach(report: Report) -> Report:
 
 
 def detach() -> Optional[Report]:
-    """Detach and return the current Report.
-
-    The Report is not closed — ownership returns to the caller.
-    """
+    """Detach and return the current Report."""
     global _current
     report = _current
     _current = None
@@ -94,10 +113,7 @@ def reset() -> None:
 
 
 def close() -> None:
-    """Run plugin close hooks on the current Report, then drop it.
-
-    Idempotent — a second call with no active session does nothing.
-    """
+    """Run plugin close hooks on the current Report, then drop it."""
     global _current
     if _current is not None:
         _current.close()
