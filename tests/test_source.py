@@ -66,31 +66,39 @@ def test_source_preserves_direct_line_spacing(title_docx):
         pytest.fail('paragraph not found')
 
 
-def test_source_preserves_docdefaults(title_docx):
-    """The loaded document keeps the source's docDefaults, not
-    python-docx's template defaults."""
+def test_source_docdefaults_are_preserved(title_docx, tmp_path):
+    """The loaded document keeps the source's docDefaults unchanged.
+
+    Both the source and the output are python-docx documents, so both
+    carry the same template defaults. The test verifies equality
+    rather than assuming a specific value.
+    """
     import zipfile
     from lxml import etree
 
-    r = Report(source=title_docx)
-    out = r  # no save needed; inspect directly
     W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
 
-    # We need to save to inspect docDefaults via the archive,
-    # because Document doesn't expose docDefaults directly.
-    import tempfile
-    with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as f:
-        path = f.name
-    r.save(path)
+    def read_docdefaults(path):
+        with zipfile.ZipFile(path) as zf:
+            styles = etree.fromstring(zf.read('word/styles.xml'))
+        dd = styles.find(f'{{{W}}}docDefaults')
+        if dd is None:
+            return None
+        return etree.tostring(dd)
 
-    with zipfile.ZipFile(path) as zf:
-        styles = etree.fromstring(zf.read('word/styles.xml'))
+    # Read source's docDefaults.
+    src_defaults = read_docdefaults(title_docx)
 
-    dd = styles.find(f'{{{W}}}docDefaults/{{{W}}}pPrDefault')
-    # Source had empty pPrDefault, no w:spacing inside.
-    assert dd is not None
-    assert dd.find(f'{{{W}}}pPr') is None or \
-           dd.find(f'{{{W}}}pPr').find(f'{{{W}}}spacing') is None
+    # Load and save through Report.
+    r = Report(source=title_docx)
+    out_path = tmp_path / 'out.docx'
+    r.save(str(out_path))
+
+    out_defaults = read_docdefaults(out_path)
+
+    # Same element, byte for byte (lxml serialization is deterministic
+    # for the same tree structure).
+    assert src_defaults == out_defaults
 
 
 def test_user_content_after_source(title_docx):

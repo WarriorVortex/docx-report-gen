@@ -1,6 +1,6 @@
 """Report class — assembles all mixins into a single builder."""
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, Any
 
 from docx import Document
 
@@ -25,10 +25,21 @@ SourceType = Union[str, Path, DocxDocument]
 
 
 def _load_source(source: SourceType) -> DocxDocument:
-    """Return a DocxDocument from a path, or pass through an existing one."""
+    """Return a DocxDocument from a path, or pass through an existing one.
+
+    For path inputs, the file is checked to exist before opening it.
+    python-docx raises PackageNotFoundError for a missing file; we
+    raise FileNotFoundError instead, which is the standard error for
+    a missing path argument.
+    """
     if isinstance(source, DocxDocument):
         return source
-    return Document(str(source))
+    source_path = Path(source)
+    if not source_path.exists():
+        raise FileNotFoundError(
+            f'source not found: {source_path}'
+        )
+    return Document(str(source_path))
 
 
 class Report(HeadingMixin, ParagraphMixin, ListMixin, CodeMixin,
@@ -206,7 +217,7 @@ class Report(HeadingMixin, ParagraphMixin, ListMixin, CodeMixin,
 
     # ---------- accessors ----------
 
-    def style(self, name: str):
+    def style(self, name: str) -> Any:
         """Direct access to a python-docx style object."""
         return self.doc.styles[name]
 
